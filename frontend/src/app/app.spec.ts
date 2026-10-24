@@ -10,7 +10,7 @@ import { Auth } from './core/auth';
 
 function signIn(role: User['role']): void {
   TestBed.inject(Auth).user.set({
-    id: 1, name: 'Sam Rivera', email: 'sam@srmist.edu.in', role, email_verified: true,
+    id: 1, name: 'Sam Rivera', email: 'sam@srmist.edu.in', role,
     account_status: 'ACTIVE', campus_id: 'EMP1001', department: 'Lost and Found Office', phone: null,
     created_at: '2026-10-24T00:00:00Z',
   });

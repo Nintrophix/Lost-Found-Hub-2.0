@@ -10,7 +10,7 @@ Only implemented endpoints are listed. Add each endpoint here when it ships.
   - `lf_session`: `HttpOnly`, opaque random token. Only its SHA-256 hash is stored (`user_sessions`).
   - `XSRF-TOKEN`: readable by JavaScript, opaque random token bound to the session (hash stored).
 - **CSRF:** every authenticated request that is not `GET`/`HEAD`/`OPTIONS` must send header `X-XSRF-TOKEN` equal to the `XSRF-TOKEN` cookie, otherwise `403`. Angular's `HttpClient` does this automatically for same-origin relative URLs, so serve the API through the Angular dev-server proxy (`/api` to `http://localhost:8000`) rather than calling another origin.
-- **Session validity:** a session is rejected (`401`) if unknown, expired, revoked, or if its user is no longer `ACTIVE` and verified. Roles are read from the database on every request, so role changes apply immediately.
+- **Session validity:** a session is rejected (`401`) if unknown, expired, revoked, or if its user is no longer `ACTIVE`. Roles are read from the database on every request, so role changes apply immediately.
 - **Roles:** `USER` (default for every registration), `STAFF`, `ADMIN`. Elevated roles come only from an existing `ADMIN` (`PATCH /api/admin/users/{id}`) or the server CLI (`python -m app.cli`).
 - **Rate limits** (in memory, per process): per client IP on each endpoint, plus silent per-email limits on register, resend, and forgot-password emails, and a per-account login limit (10 failed attempts per 15 minutes, `429` with `Retry-After`). Successful sign-ins do not count.
 - **Email** is sent after the response, so response time does not reveal whether an account exists, and nothing is sent if the request fails.
@@ -40,7 +40,7 @@ Only implemented endpoints are listed. Add each endpoint here when it ships.
 `UserResponse`
 ```json
 { "id": 1, "name": "Alex Doe", "email": "alex@example.edu", "role": "USER",
-  "email_verified": true, "account_status": "ACTIVE", "campus_id": "RA2111003010123",
+  "account_status": "ACTIVE", "campus_id": "RA2111003010123",
   "department": "Computer Science and Engineering", "phone": "+919876543210",
   "created_at": "2026-10-24T05:30:38.214450Z" }
 ```
@@ -58,9 +58,7 @@ Auth: none. `200 { "status": "ok", "database": "ok", "foreign_keys": "on" }`.
 
 | Method and path | Auth | Body | Success |
 |---|---|---|---|
-| `POST /register` | none | `{ name, email, password, campus_id, department, phone? }` | `202 MessageResponse` |
-| `POST /verify-email` | none | `{ token }` | `200 MessageResponse` |
-| `POST /resend-verification` | none | `{ email }` | `202 MessageResponse` |
+| `POST /register` | none | `{ name, email, password, campus_id, department, phone? }` | `201 UserResponse` + cookies (signed in) |
 | `POST /login` | none | `{ email, password }` | `200 UserResponse` + cookies |
 | `POST /logout` | session + CSRF | none | `204`, cookies cleared |
 | `GET /me` | session | none | `200 UserResponse` |
@@ -73,12 +71,12 @@ Auth: none. `200 { "status": "ok", "database": "ok", "foreign_keys": "on" }`.
 Behaviour notes:
 - **Allowed domain:** only addresses in `ALLOWED_EMAIL_DOMAINS` (set to `srmist.edu.in`; exact match, subdomains are not accepted) can register (`422`) or log in (`403`), and a live session stops working (`401`) if its email is no longer allowed. The message names the allowed domain(s).
 - **Profile fields:** `campus_id` is the SRM register number or employee ID: spaces are removed, it is uppercased, and it must be 5 to 20 letters or digits. It is unique: a second account with the same ID gets `409`. `department` is 2 to 100 characters. `phone` is optional: spaces, dashes, dots and brackets are removed, then it must be 7 to 15 digits with an optional leading `+`. On `PATCH /me`, `null` clears `phone` and is ignored for `name` and `department`; `email` and `campus_id` cannot be changed (`422`). Profile changes are audit-logged by field name only, never values.
-- **register:** email domain must be in `ALLOWED_EMAIL_DOMAINS`, else `422`. The response is identical whether or not the email already exists. A new account gets a verification email; an existing unverified account gets a fresh verification email; a verified account gets an "account already exists" notice. Existing accounts are never modified.
-- **Email links** point to `FRONTEND_BASE_URL/verify-email#token=...` and `/reset-password#token=...`. The token is in the URL fragment so it is not sent to servers or logged. The frontend posts it to the matching endpoint.
-- **verify-email / password/reset:** tokens are single use. Verification tokens last `EMAIL_VERIFICATION_TTL_HOURS`, reset tokens `PASSWORD_RESET_TTL_MINUTES`. Issuing a new token invalidates earlier unused ones. Failure: `400 "This link is invalid or has expired."`
-- **login:** unknown email and wrong password both return `401 "Incorrect email or password."` Account status and verification (`403`) are only reported after the correct password. A new session is created on every login.
-- **resend-verification / password/forgot:** always `202` with the same message; nothing is revealed about the account.
-- **password/reset:** sets the new password, confirms the email if it was unconfirmed, and revokes every session for the user.
+- **register:** email domain must be in `ALLOWED_EMAIL_DOMAINS`, else `422`. There is no email confirmation step (removed at the owner's request): the account is created and signed in at once, exactly like a login. An email that is already registered gets `409 "An account with this email already exists..."`; existing accounts are never modified. Because nothing proves the person owns the address, anyone who knows an unused `@srmist.edu.in` address can register it.
+- **Email links:** only password reset sends one, to `FRONTEND_BASE_URL/reset-password#token=...`. The token is in the URL fragment so it is not sent to servers or logged. The frontend posts it to `password/reset`.
+- **password/reset:** tokens are single use and last `PASSWORD_RESET_TTL_MINUTES`. Issuing a new token invalidates earlier unused ones. Failure: `400 "This link is invalid or has expired."`
+- **login:** unknown email and wrong password both return `401 "Incorrect email or password."` Account status (`403`) is only reported after the correct password. A new session is created on every login.
+- **password/forgot:** always `202` with the same message; nothing is revealed about the account.
+- **password/reset:** sets the new password and revokes every session for the user.
 - **password/change:** revokes all other sessions; the current one stays signed in.
 
 ## Admin (`/api/admin`)
@@ -313,7 +311,7 @@ Auth: session, `ADMIN`. Optional ISO 8601 bounds with timezone, applied to the `
 
 Response fields:
 - `generated_at`, `created_from`, `created_to`
-- `users`: `{ total, by_role, by_status, verified }`
+- `users`: `{ total, by_role, by_status }`
 - `reports`: counts by type, then status
 - `claims`, `handovers`, `matches`: counts by status
 - `by_category`, `by_location`: `[{ id, name, lost, found }]`, busiest first
@@ -325,7 +323,7 @@ Response fields:
 
 | Method and path | Query | Success |
 |---|---|---|
-| `GET /api/admin/users` | `q` (name or email contains; literal `%` and `_`), `role`, `account_status`, `verified`, `page`, `page_size` | `200 { items: [UserResponse], total, page, page_size }`, newest first |
+| `GET /api/admin/users` | `q` (name or email contains; literal `%` and `_`), `role`, `account_status`, `page`, `page_size` | `200 { items: [UserResponse], total, page, page_size }`, newest first |
 | `GET /api/admin/audit-logs` | `actor_id`, `action` (exact, or a prefix when it ends with `.`, e.g. `claim.`), `entity_type`, `entity_id`, `created_from`, `created_to`, `page`, `page_size` (default 50) | `200 { items: [AuditLogResponse], total, page, page_size }`, newest first |
 
 `AuditLogResponse`: `{ id, actor_id, actor_email, action, entity_type, entity_id, details, created_at }`. Audit details are written without secrets or evidence. As an extra safeguard, keys such as `token`, `password` and `evidence` are always shown as `[redacted]`.

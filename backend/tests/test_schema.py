@@ -26,7 +26,6 @@ EXPECTED_TABLES = {
     "handover_records",
     "notifications",
     "audit_logs",
-    "email_verification_tokens",
     "password_reset_tokens",
 }
 

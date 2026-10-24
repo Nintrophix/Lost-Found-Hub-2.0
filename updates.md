@@ -22,7 +22,7 @@ General
 - Passwords need at least 8 characters (was 12; owner request).
 - `PRODUCT.md` (impeccable product record) exists at the root: student project for SRMIST Ramapuram, real lost and found office; Ramapuram building names are NOT recorded and must not be invented. DESIGN.md records the visual system.
 - Design system: Bricolage Grotesque display + Atkinson Hyperlegible Next body (self-hosted), warm off-white page `#f6f5f1` with the Sliding Ease canvas, dark beams hero, exponential ease-out `cubic-bezier(0.16,1,0.3,1)`. No coloured side stripes on cards, stats or alerts (impeccable ban); item cards keep their coloured top edge because the owner's reference shows it.
-- 21st.dev code retrieval is 2 per day on the free tier; Sliding Ease was rebuilt from its preview because the quota was spent on Beams and Timeline.
+- 21st.dev code retrieval is 2 per day on the free tier. Sliding Ease is ported from the component's published preview bundle (the algorithm, mouse influence and click ripples match the original); only its colours are toned down to faint navy for readability.
 - Angular logs `InvalidStateError: Transition was aborted` in dev mode only when a navigation happens in a hidden tab (the browser skips the view transition); production builds are silent. The Claude preview pane always reports hidden, so it shows there.
 - Run everything from the repo root with `npm run setup|backend|frontend|test|cli` (root `package.json` + `scripts/dev.mjs`, which finds `backend/.venv` itself). Angular CLI analytics is disabled in `frontend/angular.json` so `ng serve` never blocks on a first-run prompt.
 - The frontend calls the API same-origin (`/api`) through `proxy.conf.json` in dev and the reverse proxy in production. Never point it at another origin, or cookies and CSRF break.
@@ -32,7 +32,7 @@ General
 - Services raise `ServiceError(status, detail)`; `app/main.py` renders it as `{"detail": ...}`. Each service function is one transaction.
 - Status transitions call `concurrency.lock_status` before writing (a same-value UPDATE that re-checks status and takes SQLite's write lock), so concurrent requests get `409` rather than overwriting each other.
 - Shared query builders are public (`items.item_query`, `matches.match_query`, `claims.claim_query`, `items.escape_like`); response builders live in `app/api/presenters.py`.
-- `tests/conftest.py` pins test settings through environment variables so `backend/.env` cannot change test behaviour. `tests/test_security.py` pins the route inventory (53); update it deliberately when adding routes.
+- `tests/conftest.py` pins test settings through environment variables so `backend/.env` cannot change test behaviour. `tests/test_security.py` pins the route inventory (54 after removing the two email confirmation routes); update it deliberately when adding routes.
 
 Data
 - Datetimes are always timezone-aware UTC (`UTCDateTime`); naive datetimes raise.
@@ -98,7 +98,9 @@ Design direction from the master prompt: midnight navy, electric lime, cool off-
 
 - **UI effects (latest):** dismissible alert stack with live notifications, account dropdown menu (ported 21st.dev / shadcn design on Angular CDK Menu), beams background on the home hero (ported 21st.dev "Beams Background", source fetched via the 21st.dev tools), cursor ring. Frontend tests now cover the menu (roles, staff and admin items) and the alert stack. Dependency added: `@angular/cdk`.
 
-- **Cursor and buttons (latest):** cursor and button animation ported from the earlier Campus Lost & Found project (`public/js/cursor.js`, `.btn` rules in `app.css`): magnetic dot and ring with leaning buttons, light sweep, 1px lift, press scale and icon nudge. Off for touch and reduced motion.
+- **Email verification removed (latest, owner request):** registering creates the account and signs it in (`201` + session cookies); `verify-email`, `resend-verification`, the `/verify-email` page, the admin "unconfirmed" tag and `verified` filter/stat are gone; a taken email now gets `409`. Migration `f72d9ca3d38f` drops `users.email_verified_at` and `email_verification_tokens` (downgrade marks every account confirmed). Trade-off: the domain allowlist no longer proves a person owns the address. Password reset email still works.
+- **Interactive Sliding Ease:** background now matches the 21st.dev original exactly, including mouse influence (180px) and click ripples; replaces the earlier lookalike.
+- **Cursor and buttons:** cursor and button animation ported from the earlier Campus Lost & Found project (`public/js/cursor.js`, `.btn` rules in `app.css`): magnetic dot and ring with leaning buttons, light sweep, 1px lift, press scale and icon nudge. Off for touch and reduced motion.
 - **Redesign pass:** impeccable workflow (PRODUCT.md interview, craft floor, animate guidance, detector). New type pairing; hero headline focus-in entrance; journey timeline port; Sliding Ease page background; Lenis smooth scroll; view transitions card to detail; card hover lift; alert and stat side stripes removed; themed selection, caret, scrollbar, accent colour and tabular numerals; compact phone header; 404 eyebrow removed. Password minimum 8. `send-test-email` CLI command; SMTP path verified against a local test server; default sender fixed.
 
 ## Commands run (latest, 2026-10-24)
@@ -144,7 +146,7 @@ Earlier phases each recorded: tests passing at the time (18, 46, 78, 109, 130, 1
 
 ## Next tasks
 
-1. Owner: set up SMTP in `backend/.env` (see README, "Sending real emails") so verification emails arrive; until then the links are in the backend terminal.
+1. Owner: set up SMTP in `backend/.env` (see README, "Sending real emails") so password reset emails arrive; until then the links are in the backend terminal.
 2. Owner or admin: replace the generic campus places with the real SRM Ramapuram buildings on the admin page.
 3. Add an in-browser camera QR scanner to the staff desk (a maintained library that works with Angular, loaded only on that page).
 4. Frontend tests for the report form, claim form and staff complete flow; consider Playwright end-to-end tests for the full claim-to-return journey.

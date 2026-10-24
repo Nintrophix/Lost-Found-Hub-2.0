@@ -82,10 +82,6 @@ class EmailRequest(StrictModel):
     email: EmailStr
 
 
-class TokenRequest(StrictModel):
-    token: OpaqueToken
-
-
 class ResetPasswordRequest(StrictModel):
     token: OpaqueToken
     new_password: NewPassword
@@ -112,7 +108,6 @@ class UserResponse(BaseModel):
     name: str
     email: str
     role: UserRole
-    email_verified: bool = Field(validation_alias="is_email_verified")
     account_status: AccountStatus
     campus_id: str | None
     department: str | None

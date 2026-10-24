@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.db.enums import HandoverStatus
-from app.db.models import EmailVerificationToken, HandoverRecord, PasswordResetToken, ReportImage, UserSession
+from app.db.models import HandoverRecord, PasswordResetToken, ReportImage, UserSession
 from app.db.types import utcnow
 from app.services import audit
 
@@ -40,7 +40,6 @@ def cleanup(db: Session, settings: Settings, dry_run: bool = False) -> dict[str,
     orphans = _orphan_files(db, settings, now)
     result = {
         "sessions": count(UserSession, dead_sessions),
-        "email_verification_tokens": count(EmailVerificationToken, dead_tokens(EmailVerificationToken)),
         "password_reset_tokens": count(PasswordResetToken, dead_tokens(PasswordResetToken)),
         "expired_qr_codes": count(HandoverRecord, *stale_qr),
         "orphaned_files": len(orphans),
@@ -49,8 +48,7 @@ def cleanup(db: Session, settings: Settings, dry_run: bool = False) -> dict[str,
         return result
 
     db.execute(delete(UserSession).where(dead_sessions))
-    for model in (EmailVerificationToken, PasswordResetToken):
-        db.execute(delete(model).where(dead_tokens(model)))
+    db.execute(delete(PasswordResetToken).where(dead_tokens(PasswordResetToken)))
     # Clearing an expired hash keeps the handover SCHEDULED; the claimant simply generates a new code.
     db.execute(update(HandoverRecord).where(*stale_qr).values(qr_token_hash=None, qr_expires_at=None,
                                                                 updated_at=now))

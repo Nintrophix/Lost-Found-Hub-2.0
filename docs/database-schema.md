@@ -25,7 +25,6 @@ Source of truth: `backend/app/db/models.py` and `backend/migrations/versions/`. 
 | department | VARCHAR(100) null | required by the API at sign-up |
 | phone | VARCHAR(20) null | optional; digits with optional leading `+` |
 | role | user_role | `USER` (default), `STAFF`, `ADMIN`. Registration always creates `USER`. |
-| email_verified_at | DATETIME null | null means unverified |
 | account_status | account_status | `ACTIVE` (default), `SUSPENDED`, `DEACTIVATED` |
 | created_at, updated_at | DATETIME | |
 
@@ -112,8 +111,8 @@ Constraints:
 ### audit_logs
 `id`, `actor_id` (FK users SET NULL, indexed), `action` (e.g. `claim.approved`), `entity_type`, `entity_id`, `metadata` (JSON; ORM attribute `details`; must never contain secrets, tokens or claim evidence), `created_at` (indexed). Index `(entity_type, entity_id)`.
 
-### email_verification_tokens / password_reset_tokens
-`id`, `user_id` (FK users CASCADE, indexed), `token_hash` (unique), `expires_at`, `consumed_at` (null until used; single use), `created_at`. Issuing a new token deletes the user's unconsumed tokens of the same kind.
+### password_reset_tokens
+`id`, `user_id` (FK users CASCADE, indexed), `token_hash` (unique), `expires_at`, `consumed_at` (null until used; single use), `created_at`. Issuing a new token deletes the user's unconsumed tokens. (`users.email_verified_at` and `email_verification_tokens` were removed with email verification in migration `f72d9ca3d38f`.)
 
 ### user_sessions
 Added in Phase 3 for server-side cookie sessions (revocable logout, password-change sign-out).

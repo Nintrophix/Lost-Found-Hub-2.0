@@ -39,7 +39,7 @@ npm test -- --watch=false
   - `beams-background.ts`: Angular port of the 21st.dev "Beams Background" (canvas) used behind the home hero. Cyan to blue only, pauses off screen or in hidden tabs, still frame for reduced motion.
   - `cursor-follower.ts`: fluid magnetic cursor ported from the earlier Campus Lost & Found project: a dot on the pointer and a spring-lagged ring that stretches as it moves and wraps buttons and header links, which lean toward the pointer. Mouse and trackpad only, off for reduced motion; the native cursor stays visible.
   - `journey-timeline.ts`: the home page's four steps. Port of the 21st.dev Timeline (Aceternity): sticky step titles and a beam, lost colour to found colour, that fills as you scroll; each step shows a labelled example of the real interface.
-  - `sliding-ease-background.ts`: faint page-wide background recreating the 21st.dev "Sliding Ease": hairlines whose dashes slide with an ease-in-out in waves. One fixed canvas, about 30 fps, paused in hidden tabs, still frame for reduced motion.
+  - `sliding-ease-background.ts`: faint page-wide background ported from the 21st.dev "Sliding Ease" (same algorithm and interaction: bars react within 180px of the mouse, clicks send ripples). One fixed canvas, paused in hidden tabs, still frame and no interaction for reduced motion.
 - `src/app/core/smooth-scroll.ts`: Lenis inertial scrolling for mouse and trackpad (native scrolling on touch and for reduced motion).
 - Type: Bricolage Grotesque (headings) and Atkinson Hyperlegible Next (body), self-hosted through `@fontsource-variable` packages; no external font requests.
 - Route changes use the View Transitions API: an item card morphs into its detail page (`view-transition-name` on the card media and title).

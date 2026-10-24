@@ -23,7 +23,6 @@ from app.schemas.auth import (
     ProfileUpdate,
     ResetPasswordRequest,
     SessionResponse,
-    TokenRequest,
     UserResponse,
 )
 from app.services import auth as auth_service
@@ -45,29 +44,14 @@ CHECK_INBOX = "If this address can receive one, we have sent an email with the n
 
 @router.post(
     "/register",
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(rate_limit("register", 10, 3600))],
 )
-def register(body: RegisterRequest, db: DbSession, settings: AppSettings, sender: Sender) -> MessageResponse:
-    auth_service.register(db, sender, settings, body.name, body.email, body.password, body.campus_id,
-                          body.department, body.phone)
-    return MessageResponse(message=CHECK_INBOX)
-
-
-@router.post("/verify-email", dependencies=[Depends(rate_limit("verify-email", 20, 300))])
-def verify_email(body: TokenRequest, db: DbSession) -> MessageResponse:
-    auth_service.verify_email(db, body.token)
-    return MessageResponse(message="Email address confirmed. You can now sign in.")
-
-
-@router.post(
-    "/resend-verification",
-    status_code=status.HTTP_202_ACCEPTED,
-    dependencies=[Depends(rate_limit("resend-verification", 5, 900))],
-)
-def resend_verification(body: EmailRequest, db: DbSession, settings: AppSettings, sender: Sender) -> MessageResponse:
-    auth_service.resend_verification(db, sender, settings, body.email)
-    return MessageResponse(message=CHECK_INBOX)
+def register(body: RegisterRequest, response: Response, db: DbSession, settings: AppSettings) -> UserResponse:
+    issued = auth_service.register(db, settings, body.name, body.email, body.password, body.campus_id,
+                                   body.department, body.phone)
+    set_session_cookies(response, settings, issued.session_token, issued.csrf_token, issued.expires_at)
+    return UserResponse.model_validate(issued.user)
 
 
 @router.post("/login", dependencies=[Depends(rate_limit("login", 20, 300))])

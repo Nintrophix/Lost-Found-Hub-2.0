@@ -193,7 +193,7 @@
       "Don't use em dashes in interface copy.",
       "Don't add coloured borders to cards other than the item card's 3px top edge; that edge is a deliberate exception from the owner's reference.",
       "Don't use hard offset shadows.",
-      "Don't let any decorative effect (beams, Sliding Ease, cursor ring) carry information."
+      "Don't let any decorative effect (beams, Sliding Ease, magnetic cursor) carry information."
     ]
   }
 }

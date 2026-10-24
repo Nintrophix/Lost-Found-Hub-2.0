@@ -7,7 +7,7 @@ from datetime import timedelta
 from sqlalchemy import select
 
 from app.db.enums import HandoverStatus, UserRole
-from app.db.models import EmailVerificationToken, HandoverRecord, ReportImage, UserSession
+from app.db.models import HandoverRecord, ReportImage, UserSession
 from app.db.types import utcnow
 from app.services.admin import redact
 from app.services.maintenance import cleanup
@@ -101,7 +101,7 @@ def test_admin_stats(flow):  # noqa: F811
     f.staff.post(f"/api/staff/handovers/{hid}/complete", json={"identity_confirmed": True})
     s = admin.get("/api/admin/stats").json()
 
-    assert s["users"]["total"] == 4 and s["users"]["verified"] == 4
+    assert s["users"]["total"] == 4
     assert s["users"]["by_role"] == {"USER": 2, "STAFF": 1, "ADMIN": 1}
     assert s["reports"]["FOUND"] == zeros(RETURNED=1)
     assert s["reports"]["LOST"] == zeros(OPEN=1)  # the owner never confirmed the match, so it stays open
@@ -141,7 +141,6 @@ def test_admin_user_list(flow):  # noqa: F811
     assert [u["role"] for u in admin.get("/api/admin/users", params={"role": "STAFF"}).json()["items"]] == ["STAFF"]
     assert admin.get("/api/admin/users", params={"q": "staff"}).json()["total"] == 1  # matches email
     assert admin.get("/api/admin/users", params={"q": "%"}).json()["total"] == 0  # wildcard escaped
-    assert admin.get("/api/admin/users", params={"verified": False}).json()["total"] == 0
     page = admin.get("/api/admin/users", params={"page_size": 3, "page": 2}).json()
     assert page["total"] == 4 and len(page["items"]) == 1
 
@@ -176,7 +175,7 @@ def test_cleanup_command(flow):  # noqa: F811
     f = flow
     db, settings = f.db, f.api.settings
 
-    # A dead session, a live one, a consumed verification token, an expired QR code and upload files.
+    # A dead session, a live one, an expired QR code and upload files.
     dead = db.scalar(select(UserSession).order_by(UserSession.id))
     dead.revoked_at = utcnow()
     cid, hid = scheduled(f)
@@ -184,8 +183,6 @@ def test_cleanup_command(flow):  # noqa: F811
     handover = db.get(HandoverRecord, hid)
     db.refresh(handover)
     handover.qr_expires_at = utcnow() - timedelta(minutes=1)
-    db.add(EmailVerificationToken(user_id=dead.user_id, token_hash="a" * 64, expires_at=utcnow() + timedelta(hours=1),
-                                  consumed_at=utcnow()))
     db.commit()
 
     lost_upload = upload(f.owner, f.lost["id"], image_bytes()).json()
@@ -198,7 +195,7 @@ def test_cleanup_command(flow):  # noqa: F811
     os.utime(old_orphan, (two_hours_ago, two_hours_ago))
     os.utime(folder / kept_name, (two_hours_ago, two_hours_ago))
 
-    expected = {"sessions": 1, "email_verification_tokens": 1, "password_reset_tokens": 0, "expired_qr_codes": 1,
+    expected = {"sessions": 1, "password_reset_tokens": 0, "expired_qr_codes": 1,
                 "orphaned_files": 1}
     assert cleanup(db, settings, dry_run=True) == expected
     assert old_orphan.exists() and db.get(UserSession, dead.id) is not None

@@ -74,7 +74,7 @@ type ReferenceKind = 'categories' | 'locations';
               @for (u of users(); track u.id) {
                 <tr>
                   <td>{{ u.name }}</td>
-                  <td>{{ u.email }} @if (!u.email_verified) { <span class="tag tag-status">unconfirmed</span> }</td>
+                  <td>{{ u.email }}</td>
                   <td>{{ u.campus_id ?? '' }}</td>
                   <td>{{ u.department ?? '' }}</td>
                   <td>{{ u.phone ?? '' }}</td>

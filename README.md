@@ -57,7 +57,7 @@ Use your real campus address in those commands, and register it on the site (or 
 
 ### Sending real emails
 
-By default (`EMAIL_BACKEND=console`) the backend does not send email: each message, including verification and password reset links, is printed in the backend terminal. To deliver real email:
+By default (`EMAIL_BACKEND=console`) the backend does not send email: each message, including password reset links, is printed in the backend terminal. To deliver real email:
 
 1. Pick a mail account to send from. For Gmail: turn on 2-Step Verification, then create an App Password at https://myaccount.google.com/apppasswords.
 2. In `backend/.env`, set `EMAIL_BACKEND=smtp` and fill in `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, `SMTP_USERNAME`, `SMTP_PASSWORD` (the app password) and `EMAIL_FROM` (the same address as the username). The file has these lines ready, commented out.
@@ -154,7 +154,7 @@ From the repository root, in two terminals: `npm run backend` and `npm run front
 
 Open http://localhost:4200. The Angular dev server proxies `/api` to the backend on port 8000. Health check: `http://localhost:8000/api/health`. API docs: `http://localhost:8000/api/docs` (disabled when `ENVIRONMENT=production`).
 
-In development, verification and password reset emails are printed in the backend terminal; open the link shown there.
+Creating an account signs you in straight away; there is no confirmation email. In development, password reset emails are printed in the backend terminal; open the link shown there.
 
 ## Test
 
@@ -172,7 +172,7 @@ npm test -- --watch=false
 
 ## Security
 
-- Cookie sessions stored server-side, Argon2id password hashing, campus-domain allowlisting, email verification, password reset, CSRF protection on every write, and role checks enforced in the backend.
+- Cookie sessions stored server-side, Argon2id password hashing, campus-domain allowlisting (addresses are not confirmed by email, so the allowlist checks the domain only), password reset, CSRF protection on every write, and role checks enforced in the backend.
 - Rate limits, emails sent after the response, and equal hashing work on duplicate registration, so responses don't reveal whether an account exists.
 - Security headers on every response, a request body size limit, uploads re-encoded with metadata stripped, and claim evidence kept private.
 - Status changes re-check the current state at write time, so concurrent requests cannot overwrite each other.
@@ -190,6 +190,17 @@ The backend is a single FastAPI process with a local SQLite file. For a campus d
 4. Keep `data/` and `uploads/` outside the web root, writable only by the service account.
 5. Schedule `python -m app.cli cleanup` daily and `python -m app.db.backup backup` at least daily, and copy backups (database and `uploads/`) off the machine.
 6. Run `alembic upgrade head` on every release before starting the new version.
+
+### Vercel (draft, not deployable yet)
+
+`vercel.json` at the repo root defines one Vercel project with two services on one domain: `backend` (FastAPI, `app.main:app`) receives `/api/*` with the path unchanged, and `frontend` (the Angular build in `dist/lost-found-hub/browser`, with a fallback to `index.html` for app routes) receives everything else. The browser calls `/api/...` on the same origin, so no service bindings are needed. Test locally with `vercel dev`.
+
+Before it can work in production:
+
+- Storage: Vercel Functions have a read-only, short-lived filesystem, so the SQLite file in `backend/data/` and photos in `backend/uploads/` cannot persist there. The database and image storage must move to hosted services (or the backend must run somewhere with a persistent disk).
+- Migrations: `alembic upgrade head` must be run against the production database on each release; Vercel does not run it.
+- Rate limits are kept in each function instance's memory, so they are weaker across instances.
+- Project environment variables: the production values from step 1 (`FRONTEND_BASE_URL` and `CORS_ORIGINS` set to the Vercel domain), plus `SITE_URL` for the frontend build.
 
 ## Matching
 

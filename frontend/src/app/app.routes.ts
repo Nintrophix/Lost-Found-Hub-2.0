@@ -62,11 +62,6 @@ export const routes: Routes = [
     data: meta({ title: 'Create an account', description: 'Create an account with your campus email address.' }),
   },
   {
-    path: 'verify-email',
-    loadComponent: () => import('./pages/auth-pages').then((m) => m.VerifyEmailPage),
-    data: meta({ title: 'Confirm your email', noindex: true }),
-  },
-  {
     path: 'forgot-password',
     loadComponent: () => import('./pages/auth-pages').then((m) => m.ForgotPasswordPage),
     data: meta({ title: 'Forgot password', noindex: true }),

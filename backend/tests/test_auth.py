@@ -12,7 +12,7 @@ from app.cli import create_admin, set_role
 from app.core.config import Settings
 from app.core.security import hash_password, hash_token, verify_password
 from app.db.enums import AccountStatus, UserRole
-from app.db.models import AuditLog, EmailVerificationToken, User, UserSession
+from app.db.models import AuditLog, User, UserSession
 from app.db.types import utcnow
 
 PASSWORD = "correct horse battery"
@@ -43,54 +43,50 @@ def csrf(client) -> dict[str, str]:
 
 
 @pytest.fixture
-def verified_user(client, outbox):
-    """Register and verify alex@example.edu, then return the client (not signed in)."""
-    assert register(client).status_code == 202
-    assert client.post("/api/auth/verify-email", json={"token": token_from(outbox)}).status_code == 200
+def registered(client):
+    """Register alex@example.edu, then return the client signed out."""
+    assert register(client).status_code == 201
+    client.cookies.clear()
     return client
 
 
 @pytest.fixture
-def signed_in(verified_user):
-    assert login(verified_user).status_code == 200
-    return verified_user
+def signed_in(registered):
+    assert login(registered).status_code == 200
+    return registered
 
 
-def make_verified(db, email: str, role: UserRole = UserRole.USER) -> User:
-    user = User(name="Seeded", email=email, password_hash=hash_password(PASSWORD), role=role,
-                email_verified_at=utcnow())
+def make_account(db, email: str, role: UserRole = UserRole.USER) -> User:
+    user = User(name="Seeded", email=email, password_hash=hash_password(PASSWORD), role=role)
     db.add(user)
     db.commit()
     return user
 
 
-# Registration and verification
+# Registration
 
 def test_full_registration_flow(client, outbox, db):
     response = register(client, email="  Alex@Example.EDU ")
-    assert response.status_code == 202
-    assert response.json() == {"message": GENERIC_MESSAGE}
+    assert response.status_code == 201
+    body = response.json()
+    assert body["email"] == "alex@example.edu" and body["role"] == "USER" and "password_hash" not in body
 
     user = db.scalar(select(User).where(User.email == "alex@example.edu"))
-    assert user.role == UserRole.USER and user.email_verified_at is None
+    assert user.role == UserRole.USER
     assert user.password_hash != PASSWORD and verify_password(user.password_hash, PASSWORD)
 
-    raw = token_from(outbox)
-    stored = db.scalar(select(EmailVerificationToken).where(EmailVerificationToken.user_id == user.id))
-    assert stored.token_hash == hash_token(raw) and raw not in stored.token_hash
-    assert outbox.outbox[-1].to == "alex@example.edu"
-
-    assert login(client).status_code == 403  # not verified yet
-    assert client.post("/api/auth/verify-email", json={"token": raw}).status_code == 200
-    assert client.post("/api/auth/verify-email", json={"token": raw}).status_code == 400  # single use
-
-    response = login(client)
-    assert response.status_code == 200
-    assert response.json()["email_verified"] is True
-    assert "password_hash" not in response.json()
-
+    # Signed in straight away: no confirmation email, no extra step.
+    assert outbox.outbox == []
+    assert client.cookies.get(SESSION_COOKIE) and client.cookies.get(CSRF_COOKIE)
     me = client.get("/api/auth/me")
     assert me.status_code == 200 and me.json()["email"] == "alex@example.edu"
+    assert client.post("/api/auth/logout", headers=csrf(client)).status_code == 204
+    assert login(client).status_code == 200
+
+
+def test_email_confirmation_endpoints_are_gone(client):
+    assert client.post("/api/auth/verify-email", json={"token": "x" * 43}).status_code == 404
+    assert client.post("/api/auth/resend-verification", json={"email": "alex@example.edu"}).status_code == 404
 
 
 def test_registration_rejects_non_campus_domain(client, outbox):
@@ -112,13 +108,12 @@ def test_registration_cannot_request_elevated_role(client, db):
 
 def test_registration_stores_profile_details(client, outbox, db):
     response = register(client, campus_id=" ra 2111003010123 ", phone="+91 98765-43210")
-    assert response.status_code == 202
+    assert response.status_code == 201
     user = db.scalar(select(User).where(User.email == "alex@example.edu"))
     assert (user.campus_id, user.department, user.phone) == (
         "RA2111003010123", "Computer Science and Engineering", "+919876543210",
     )
-    client.post("/api/auth/verify-email", json={"token": token_from(outbox)})
-    body = login(client).json()
+    body = response.json()
     assert body["campus_id"] == "RA2111003010123" and body["phone"] == "+919876543210"
 
 
@@ -132,10 +127,10 @@ def test_registration_validates_profile(client, profile):
 
 
 def test_srm_id_is_unique(client, outbox):
-    assert register(client).status_code == 202
+    assert register(client).status_code == 201
     response = register(client, email="someone.else@example.edu")
     assert response.status_code == 409 and "SRM ID" in response.json()["detail"]
-    assert len(outbox.outbox) == 1  # nothing was sent for the rejected sign-up
+    assert outbox.outbox == []
 
 
 def test_profile_update(signed_in, db):
@@ -164,7 +159,7 @@ def test_only_allowed_domain_can_register(client, outbox):
 
 def test_other_domains_blocked_at_login_and_on_every_request(signed_in, make_client, db):
     # An account from a domain that is no longer allowed (e.g. after ALLOWED_EMAIL_DOMAINS changed).
-    outsider = make_verified(db, "outsider@gmail.com")
+    outsider = make_account(db, "outsider@gmail.com")
     other = make_client()
     response = login(other, "outsider@gmail.com")
     assert response.status_code == 403 and "@example.edu" in response.json()["detail"]
@@ -184,7 +179,7 @@ def test_session_reports_allowed_domains(client):
 
 
 def test_eight_character_password_is_accepted(client):
-    assert register(client, password="abcd1234").status_code == 202
+    assert register(client, password="abcd1234").status_code == 201
 
 
 @pytest.mark.parametrize("password", ["short", "seven77", " " * 20, "x" * 129])
@@ -192,46 +187,27 @@ def test_registration_enforces_password_policy(client, password):
     assert register(client, password=password).status_code == 422
 
 
-def test_duplicate_registration_does_not_reveal_or_overwrite(verified_user, outbox, db):
-    response = register(verified_user, password="attacker chosen password", name="Mallory")
-    assert response.status_code == 202
-    assert response.json() == {"message": GENERIC_MESSAGE}
-    assert outbox.outbox[-1].subject == "You already have an account"
+def test_duplicate_email_is_rejected_without_overwrite(registered, db):
+    response = register(registered, password="attacker chosen password", name="Mallory",
+                        campus_id="RA2111003010999")
+    assert response.status_code == 409 and "already exists" in response.json()["detail"]
+    assert registered.cookies.get(SESSION_COOKIE) is None
     user = db.scalar(select(User).where(User.email == "alex@example.edu"))
     db.refresh(user)
     assert user.name == "Alex Doe" and verify_password(user.password_hash, PASSWORD)
 
 
-def test_expired_verification_token_rejected(client, outbox, db):
-    register(client)
-    raw = token_from(outbox)
-    token = db.scalar(select(EmailVerificationToken))
-    token.expires_at = utcnow() - timedelta(seconds=1)
-    db.commit()
-    assert client.post("/api/auth/verify-email", json={"token": raw}).status_code == 400
-
-
-def test_resend_verification_replaces_old_token(client, outbox):
-    register(client)
-    first = token_from(outbox)
-    assert client.post("/api/auth/resend-verification", json={"email": "alex@example.edu"}).status_code == 202
-    second = token_from(outbox)
-    assert first != second
-    assert client.post("/api/auth/verify-email", json={"token": first}).status_code == 400
-    assert client.post("/api/auth/verify-email", json={"token": second}).status_code == 200
-
-
 # Login and sessions
 
-def test_login_failures_are_generic(verified_user):
-    wrong = login(verified_user, password="wrong password here")
-    unknown = login(verified_user, email="nobody@example.edu")
+def test_login_failures_are_generic(registered):
+    wrong = login(registered, password="wrong password here")
+    unknown = login(registered, email="nobody@example.edu")
     assert wrong.status_code == unknown.status_code == 401
     assert wrong.json() == unknown.json() == {"detail": "Incorrect email or password."}
 
 
-def test_session_cookie_flags_and_hashed_storage(verified_user, db):
-    response = login(verified_user)
+def test_session_cookie_flags_and_hashed_storage(registered, db):
+    response = login(registered)
     cookies = response.headers.get_list("set-cookie")
     session_cookie = next(c for c in cookies if c.startswith(f"{SESSION_COOKIE}="))
     csrf_cookie = next(c for c in cookies if c.startswith(f"{CSRF_COOKIE}="))
@@ -239,10 +215,10 @@ def test_session_cookie_flags_and_hashed_storage(verified_user, db):
         assert "Secure" in cookie and "samesite=lax" in cookie.lower()
     assert "HttpOnly" in session_cookie and "HttpOnly" not in csrf_cookie
 
-    raw = verified_user.cookies.get(SESSION_COOKIE)
-    stored = db.scalar(select(UserSession))
+    raw = registered.cookies.get(SESSION_COOKIE)
+    stored = db.scalar(select(UserSession).order_by(UserSession.id.desc()).limit(1))
     assert stored.token_hash == hash_token(raw)
-    assert stored.csrf_token_hash == hash_token(verified_user.cookies.get(CSRF_COOKIE))
+    assert stored.csrf_token_hash == hash_token(registered.cookies.get(CSRF_COOKIE))
 
 
 def test_session_endpoint_never_errors(signed_in, make_client):
@@ -270,25 +246,25 @@ def test_logout_requires_csrf_and_revokes_session(signed_in):
 
 
 def test_expired_session_rejected(signed_in, db):
-    session = db.scalar(select(UserSession))
-    session.expires_at = utcnow() - timedelta(seconds=1)
+    for session in db.scalars(select(UserSession)):
+        session.expires_at = utcnow() - timedelta(seconds=1)
     db.commit()
     assert signed_in.get("/api/auth/me").status_code == 401
 
 
-def test_suspended_user_cannot_sign_in(verified_user, db):
+def test_suspended_user_cannot_sign_in(registered, db):
     user = db.scalar(select(User))
     user.account_status = AccountStatus.SUSPENDED
     db.commit()
-    response = login(verified_user)
+    response = login(registered)
     assert response.status_code == 403
-    assert verified_user.cookies.get(SESSION_COOKIE) is None
+    assert registered.cookies.get(SESSION_COOKIE) is None
 
 
 def test_login_events_are_audited_without_secrets(signed_in, db):
     login(signed_in, password="wrong password here")
     actions = [log.action for log in db.scalars(select(AuditLog).order_by(AuditLog.id))]
-    assert actions == ["auth.registered", "auth.email_verified", "auth.login", "auth.login_failed"]
+    assert actions == ["auth.registered", "auth.login", "auth.login", "auth.login_failed"]
     for log in db.scalars(select(AuditLog)):
         assert PASSWORD not in str(log.details)
 
@@ -317,13 +293,6 @@ def test_password_reset_flow(signed_in, make_client, outbox):
     assert login(signed_in, password=NEW_PASSWORD).status_code == 200
 
 
-def test_password_reset_verifies_unverified_email(client, outbox, db):
-    register(client)
-    client.post("/api/auth/password/forgot", json={"email": "alex@example.edu"})
-    client.post("/api/auth/password/reset", json={"token": token_from(outbox), "new_password": NEW_PASSWORD})
-    assert login(client, password=NEW_PASSWORD).status_code == 200
-
-
 def test_change_password_keeps_current_session_only(signed_in, make_client):
     other_device = make_client()
     login(other_device)
@@ -341,14 +310,14 @@ def test_change_password_keeps_current_session_only(signed_in, make_client):
 # Roles
 
 def test_non_admin_cannot_manage_users(signed_in, db):
-    target = make_verified(db, "target@example.edu")
+    target = make_account(db, "target@example.edu")
     response = signed_in.patch(f"/api/admin/users/{target.id}", json={"role": "ADMIN"}, headers=csrf(signed_in))
     assert response.status_code == 403
 
 
 def test_admin_manages_roles_and_status(make_client, db):
-    make_verified(db, "admin@example.edu", UserRole.ADMIN)
-    target = make_verified(db, "target@example.edu")
+    make_account(db, "admin@example.edu", UserRole.ADMIN)
+    target = make_account(db, "target@example.edu")
     admin, target_client = make_client(), make_client()
     login(admin, "admin@example.edu")
     login(target_client, "target@example.edu")
@@ -373,10 +342,10 @@ def test_admin_manages_roles_and_status(make_client, db):
 
 # Rate limiting
 
-def test_login_rate_limited_per_account(verified_user):
+def test_login_rate_limited_per_account(registered):
     for _ in range(10):
-        assert login(verified_user, password="wrong password here").status_code == 401
-    response = login(verified_user)
+        assert login(registered, password="wrong password here").status_code == 401
+    response = login(registered)
     assert response.status_code == 429
     assert response.headers["Retry-After"] == "900"
 
@@ -391,9 +360,9 @@ def test_login_rate_limited_per_ip(client):
 
 # CLI and configuration
 
-def test_cli_creates_verified_admin_and_sets_roles(db):
+def test_cli_creates_admin_and_sets_roles(db):
     admin = create_admin(db, "Head@Example.edu", "Campus Admin", PASSWORD)
-    assert admin.email == "head@example.edu" and admin.role == UserRole.ADMIN and admin.is_email_verified
+    assert admin.email == "head@example.edu" and admin.role == UserRole.ADMIN
     with pytest.raises(SystemExit):
         create_admin(db, "head@example.edu", "Again", PASSWORD)
     with pytest.raises(SystemExit):
