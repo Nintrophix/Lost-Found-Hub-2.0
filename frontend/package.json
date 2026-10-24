@@ -1,0 +1,12 @@
+{
+  "name": "lost-found-campus-hub-frontend",
+  "version": "0.1.0",
+  "scripts": {
+    "start": "ng serve",
+    "build": "ng build"
+  },
+  "private": true,
+  "dependencies": {
+    "@angular/core": "^16.0.0"
+  }
+}
