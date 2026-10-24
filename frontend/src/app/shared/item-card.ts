@@ -14,7 +14,7 @@ import { StatusTag } from './status-tag';
     @let it = item();
     <a class="card" [class.lost]="it.report_type === 'LOST'" [class.found]="it.report_type === 'FOUND'"
        [routerLink]="['/items', it.id]">
-      <div class="card-media">
+      <div class="card-media" [style.view-transition-name]="'item-media-' + it.id">
         @if (it.images.length) {
           <img [src]="it.images[0].url" [alt]="'Photo of ' + it.title" loading="lazy" />
         } @else {
@@ -23,7 +23,7 @@ import { StatusTag } from './status-tag';
       </div>
       <div class="card-body">
         <app-status-tag [item]="it" />
-        <h3>{{ it.title }}</h3>
+        <h3 [style.view-transition-name]="'item-title-' + it.id">{{ it.title }}</h3>
         <p class="meta"><app-icon name="pin" [size]="14" />{{ it.location.name }}</p>
         <p class="meta"><app-icon name="calendar" [size]="14" />{{ it.occurred_at | date: 'mediumDate' }}</p>
       </div>

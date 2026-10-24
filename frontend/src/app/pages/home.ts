@@ -8,52 +8,57 @@ import { SITE_NAME, Seo } from '../core/seo';
 import { BeamsBackground } from '../shared/beams-background';
 import { Icon } from '../shared/icon';
 import { ItemCard } from '../shared/item-card';
+import { JourneyTimeline } from '../shared/journey-timeline';
 
 @Component({
   selector: 'app-home',
-  imports: [FormsModule, RouterLink, BeamsBackground, Icon, ItemCard],
+  imports: [FormsModule, RouterLink, BeamsBackground, Icon, ItemCard, JourneyTimeline],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <app-beams-background intensity="strong">
-    <section class="container hero" style="padding-block: 40px 48px">
-      <div>
-        <h1>Lost something on campus? Found something that isn't yours?</h1>
-        <p>
-          Post what you lost or found with a photo, the building and the date. Owners prove an item is theirs
-          with a private claim, and campus staff hand it over after checking their SRM ID card.
-        </p>
-        <form class="search" role="search" (ngSubmit)="search()">
-          <div style="flex: 1">
+      <section class="container hero">
+        <div class="hero-copy">
+          <!-- Each line comes into focus in turn: the page's one authored entrance. -->
+          <h1 class="hero-title">
+            <span class="focus-in" style="--i: 0">Lost something on campus?</span>
+            <span class="focus-in" style="--i: 1">Found something that isn't yours?</span>
+          </h1>
+          <p class="hero-lede rise-in" style="--i: 2">
+            Post what you lost or found with a photo, the building and the date. Owners prove an item is theirs
+            with a private claim, and the lost and found office hands it over after checking their SRM ID card.
+          </p>
+          <form class="hero-search rise-in" style="--i: 3" role="search" (ngSubmit)="search()">
             <label for="home-search">Search lost and found items</label>
             <div class="search">
               <input id="home-search" name="q" [(ngModel)]="query" placeholder="For example: blue water bottle library" />
-              <button class="btn" type="submit"><app-icon name="search" [size]="16" />Search</button>
+              <button class="btn btn-on-dark" type="submit"><app-icon name="search" [size]="16" />Search</button>
             </div>
+          </form>
+          <div class="hero-actions rise-in" style="--i: 4">
+            <a class="btn btn-lost" routerLink="/report" [queryParams]="{ type: 'LOST' }">I lost something</a>
+            <a class="btn btn-found" routerLink="/report" [queryParams]="{ type: 'FOUND' }">I found something</a>
           </div>
-        </form>
-        <div class="hero-actions">
-          <a class="btn btn-lost" routerLink="/report" [queryParams]="{ type: 'LOST' }">I lost something</a>
-          <a class="btn btn-found" routerLink="/report" [queryParams]="{ type: 'FOUND' }">I found something</a>
         </div>
-      </div>
 
-      @if (stats(); as s) {
-        <aside aria-labelledby="stats-heading">
-          <h2 id="stats-heading" style="font-size: 1rem">Listings right now</h2>
-          <div class="stat lost"><span>Open lost reports</span><strong>{{ s.open_lost_reports }}</strong></div>
-          <div class="stat found"><span>Found items waiting for owners</span><strong>{{ s.found_items_waiting }}</strong></div>
-          <div class="stat"><span>Items returned through this site</span><strong>{{ s.items_returned }}</strong></div>
-        </aside>
-      }
-    </section>
+        @if (stats(); as s) {
+          <aside class="listings rise-in" style="--i: 3" aria-labelledby="stats-heading">
+            <h2 id="stats-heading">Listings right now</h2>
+            <dl>
+              <div class="listing lost"><dt>Open lost reports</dt><dd>{{ s.open_lost_reports }}</dd></div>
+              <div class="listing found"><dt>Found items waiting for owners</dt><dd>{{ s.found_items_waiting }}</dd></div>
+              <div class="listing returned"><dt>Items returned through this site</dt><dd>{{ s.items_returned }}</dd></div>
+            </dl>
+          </aside>
+        }
+      </section>
     </app-beams-background>
 
     <section class="band" aria-labelledby="recent-heading">
       <div class="container">
-        <div class="spread" style="margin-bottom: 16px">
-          <h2 id="recent-heading" style="margin: 0">Recently reported</h2>
+        <div class="section-head">
+          <h2 id="recent-heading">Recently reported</h2>
           @if (auth.signedIn()) {
-            <a routerLink="/items" class="row" style="gap: 4px">See all items <app-icon name="arrow" [size]="16" /></a>
+            <a routerLink="/items" class="arrow-link">See all items <app-icon name="arrow" [size]="16" /></a>
           }
         </div>
         @if (!auth.signedIn()) {
@@ -65,9 +70,9 @@ import { ItemCard } from '../shared/item-card';
             </div>
           </div>
         } @else if (recent().length) {
-          <div class="cards">
-            @for (item of recent(); track item.id) {
-              <app-item-card [item]="item" />
+          <div class="cards stagger">
+            @for (item of recent(); track item.id; let i = $index) {
+              <app-item-card [item]="item" [style.--i]="i" />
             }
           </div>
         } @else if (recentLoaded()) {
@@ -76,23 +81,13 @@ import { ItemCard } from '../shared/item-card';
       </div>
     </section>
 
-    <section class="container page" aria-labelledby="how-heading">
-      <h2 id="how-heading">How it works</h2>
-      <div class="grid-2">
-        <div>
-          <h3>1. Report it</h3>
-          <p>Describe the item, where and when. Photos are stripped of location data before they are stored.</p>
-        </div>
-        <div>
-          <h3>2. Check suggested matches</h3>
-          <p>Reports are compared by category, description, colour, place and date. Suggestions are only a starting point.</p>
-        </div>
-        <div>
-          <h3>3. Claim and collect</h3>
-          <p>Tell staff privately what proves it is yours. Once approved, show the QR code from your dashboard at the desk.</p>
-        </div>
+    <section class="container page journey-section" aria-labelledby="how-heading">
+      <div class="journey-intro">
+        <h2 id="how-heading">From lost to found, in four steps</h2>
+        <p class="muted">Every step keeps your proof private and the handover in person.</p>
       </div>
-      <p class="small muted">Read how your information is handled in the <a routerLink="/privacy">privacy policy</a>.</p>
+      <app-journey-timeline />
+      <p class="small muted journey-foot">Read how your information is handled in the <a routerLink="/privacy">privacy policy</a>.</p>
     </section>
   `,
 })

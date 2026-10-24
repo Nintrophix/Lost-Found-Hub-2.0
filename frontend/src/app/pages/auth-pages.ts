@@ -108,8 +108,8 @@ export class LoginPage {
               <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="20" [(ngModel)]="phone" />
             </div>
             <div class="field">
-              <label for="password">Password <span class="hint">(at least 12 characters)</span></label>
-              <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" required [(ngModel)]="password" />
+              <label for="password">Password <span class="hint">(at least 8 characters)</span></label>
+              <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required [(ngModel)]="password" />
             </div>
             <button class="btn" type="submit" [disabled]="busy()">Create account</button>
           </form>
@@ -263,8 +263,8 @@ export class ForgotPasswordPage {
         @if (error()) { <div class="alert alert-error" role="alert">{{ error() }}</div> }
         <form (ngSubmit)="submit()">
           <div class="field">
-            <label for="password">New password <span class="hint">(at least 12 characters)</span></label>
-            <input id="password" name="password" type="password" autocomplete="new-password" minlength="12" required [(ngModel)]="password" />
+            <label for="password">New password <span class="hint">(at least 8 characters)</span></label>
+            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required [(ngModel)]="password" />
           </div>
           <button class="btn" type="submit">Save password</button>
         </form>

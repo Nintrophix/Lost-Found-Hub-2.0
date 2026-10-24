@@ -183,7 +183,11 @@ def test_session_reports_allowed_domains(client):
     assert client.get("/api/auth/session").json() == {"user": None, "allowed_email_domains": ["example.edu"]}
 
 
-@pytest.mark.parametrize("password", ["short", " " * 20, "x" * 129])
+def test_eight_character_password_is_accepted(client):
+    assert register(client, password="abcd1234").status_code == 202
+
+
+@pytest.mark.parametrize("password", ["short", "seven77", " " * 20, "x" * 129])
 def test_registration_enforces_password_policy(client, password):
     assert register(client, password=password).status_code == 422
 

@@ -27,6 +27,9 @@
             ],
             "styles": [
               "@angular/cdk/overlay-prebuilt.css",
+              "@fontsource-variable/bricolage-grotesque/index.css",
+              "@fontsource-variable/atkinson-hyperlegible-next/index.css",
+              "lenis/dist/lenis.css",
               "src/styles.css"
             ]
           },

@@ -7,13 +7,14 @@ import { Api, Item, Match, errorMessage } from '../core/api';
 import { Seo } from '../core/seo';
 import { Alerts } from '../core/alerts';
 import { Breadcrumbs } from '../shared/breadcrumbs';
+import { Icon, categoryIcon } from '../shared/icon';
 import { StatusTag } from '../shared/status-tag';
 
 const MAX_IMAGES = 5;
 
 @Component({
   selector: 'app-item-detail',
-  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, Breadcrumbs, StatusTag],
+  imports: [FormsModule, RouterLink, DatePipe, DecimalPipe, Breadcrumbs, Icon, StatusTag],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="container page">
@@ -23,11 +24,18 @@ const MAX_IMAGES = 5;
         <div class="detail">
           <article class="stack">
             <app-status-tag [item]="it" />
-            <h1>{{ it.title }}</h1>
-            @if (it.images.length) {
+            <h1 [style.view-transition-name]="'item-title-' + it.id">{{ it.title }}</h1>
+            <div class="detail-media" [class.lost]="it.report_type === 'LOST'" [style.view-transition-name]="'item-media-' + it.id">
+              @if (it.images.length) {
+                <img [src]="it.images[0].url" [alt]="'Photo 1 of ' + it.title" />
+              } @else {
+                <span class="icon-disc"><app-icon [name]="icon()" [size]="64" [strokeWidth]="1.5" /></span>
+              }
+            </div>
+            @if (it.images.length > 1) {
               <div class="gallery">
-                @for (image of it.images; track image.id; let i = $index) {
-                  <img [src]="image.url" [alt]="'Photo ' + (i + 1) + ' of ' + it.title" />
+                @for (image of it.images.slice(1); track image.id; let i = $index) {
+                  <img [src]="image.url" [alt]="'Photo ' + (i + 2) + ' of ' + it.title" loading="lazy" />
                 }
               </div>
             }
@@ -144,6 +152,7 @@ export class ItemDetailPage {
   protected readonly busy = signal(false);
   protected readonly claimed = signal(false);
   protected readonly maxImages = MAX_IMAGES;
+  protected readonly icon = computed(() => categoryIcon(this.item()?.category.name ?? ''));
   protected readonly editable = computed(() => ['OPEN', 'MATCHED'].includes(this.item()?.status ?? ''));
   protected evidence = '';
 

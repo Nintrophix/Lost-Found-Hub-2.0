@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
 
     email_backend: Literal["console", "smtp"] = "console"
-    email_from: str = "Campus Lost & Found Hub <no-reply@example.edu>"
+    email_from: str = "Campus Lost & Found Hub <no-reply@srmist.edu.in>"
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_username: str = ""

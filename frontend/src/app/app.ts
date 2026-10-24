@@ -6,12 +6,14 @@ import { AccountMenu } from './shared/account-menu';
 import { AlertStack } from './shared/alert-stack';
 import { CursorFollower } from './shared/cursor-follower';
 import { Icon } from './shared/icon';
+import { SlidingEaseBackground } from './shared/sliding-ease-background';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, AccountMenu, AlertStack, CursorFollower],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, Icon, AccountMenu, AlertStack, CursorFollower, SlidingEaseBackground],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    <app-sliding-ease />
     <header class="site-header">
       <div class="container">
         <a class="brand" routerLink="/">
@@ -24,9 +26,9 @@ import { Icon } from './shared/icon';
             <app-account-menu />
           } @else {
             <a routerLink="/login" routerLinkActive="active">Log in</a>
-            <a routerLink="/register" routerLinkActive="active">Create account</a>
+            <a class="hide-xs" routerLink="/register" routerLinkActive="active">Create account</a>
           }
-          <a class="btn" routerLink="/report"><app-icon name="plus" [size]="16" />Report an item</a>
+          <a class="btn" routerLink="/report"><app-icon name="plus" [size]="16" />Report<span class="hide-sm">an item</span></a>
         </nav>
       </div>
     </header>

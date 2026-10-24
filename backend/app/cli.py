@@ -5,6 +5,7 @@ Usage:
     python -m app.cli set-role --email person@example.edu --role STAFF
     python -m app.cli rematch    (recompute suggestions after changing MATCH_* settings)
     python -m app.cli cleanup [--dry-run]    (dead sessions and tokens, expired QR codes, orphaned uploads)
+    python -m app.cli send-test-email --to you@srmist.edu.in    (check the EMAIL_BACKEND / SMTP settings)
 """
 
 import argparse
@@ -23,6 +24,7 @@ from app.db.types import utcnow
 from app.schemas.auth import NewPassword
 from app.services import audit, maintenance, matching
 from app.services.auth import email_domain_allowed, normalise_email
+from app.services.email import OutgoingEmail, get_email_sender
 
 _password_adapter = TypeAdapter(NewPassword)
 
@@ -74,8 +76,24 @@ def rematch(db: Session) -> int:
     return created
 
 
+def send_test_email(to: str) -> str:
+    """Send one message through the configured backend so SMTP settings can be checked."""
+    settings = get_settings()
+    get_email_sender().send(
+        OutgoingEmail(
+            to=to,
+            subject="Campus Lost & Found Hub test email",
+            body="This is a test from Campus Lost & Found Hub. If you can read it, email delivery works.",
+        )
+    )
+    if settings.email_backend == "console":
+        return ("EMAIL_BACKEND is 'console': the message was printed above, not sent. "
+                "Set EMAIL_BACKEND=smtp and the SMTP_* values in backend/.env to send real email.")
+    return f"Sent to {to} through {settings.smtp_host}:{settings.smtp_port}. Check that inbox (and spam)."
+
+
 def _prompt_password() -> str:
-    password = getpass.getpass("Password (min 12 characters): ")
+    password = getpass.getpass("Password (min 8 characters): ")
     if password != getpass.getpass("Repeat password: "):
         raise SystemExit("Passwords do not match.")
     return password
@@ -93,6 +111,8 @@ def main() -> None:
     sub.add_parser("rematch")
     cleanup_cmd = sub.add_parser("cleanup")
     cleanup_cmd.add_argument("--dry-run", action="store_true")
+    email_cmd = sub.add_parser("send-test-email")
+    email_cmd.add_argument("--to", required=True)
     args = parser.parse_args()
 
     with SessionLocal() as db:
@@ -107,6 +127,11 @@ def main() -> None:
             print(f"{user.email} now has role {user.role.value}.")
         elif args.command == "rematch":
             print(f"Rematch complete: {rematch(db)} new suggestions.")
+        elif args.command == "send-test-email":
+            try:
+                print(send_test_email(args.to))
+            except OSError as exc:  # smtplib errors are OSError subclasses
+                raise SystemExit(f"Sending failed: {exc}") from None
         else:
             counts = maintenance.cleanup(db, get_settings(), dry_run=args.dry_run)
             verb = "Would remove" if args.dry_run else "Removed"

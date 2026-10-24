@@ -168,8 +168,8 @@ interface ShownQr {
               <input id="current-password" name="current" type="password" autocomplete="current-password" required [(ngModel)]="currentPassword" />
             </div>
             <div class="field">
-              <label for="new-password">New password <span class="hint">(at least 12 characters)</span></label>
-              <input id="new-password" name="new" type="password" autocomplete="new-password" minlength="12" required [(ngModel)]="newPassword" />
+              <label for="new-password">New password <span class="hint">(at least 8 characters)</span></label>
+              <input id="new-password" name="new" type="password" autocomplete="new-password" minlength="8" required [(ngModel)]="newPassword" />
             </div>
             <button class="btn" type="submit">Change password</button>
             <p class="hint" style="margin-top: 8px">Other devices are signed out; this one stays signed in.</p>

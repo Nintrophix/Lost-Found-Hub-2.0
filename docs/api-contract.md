@@ -47,7 +47,7 @@ Only implemented endpoints are listed. Add each endpoint here when it ships.
 
 `MessageResponse`: `{ "message": "..." }`
 
-Passwords: 12 to 128 characters, not only whitespace.
+Passwords: 8 to 128 characters, not only whitespace.
 
 ## System
 

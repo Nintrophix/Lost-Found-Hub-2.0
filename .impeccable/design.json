@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-24T00:00:00Z",
+  "title": "Design System: Campus Lost & Found Hub",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Counter Navy", "canonical": "#1e3a6e", "tonalRamp": ["#0a1428", "#111f3d", "#172d56", "#1e3a6e", "#3a5a8f", "#6d88b5", "#a9bbd8", "#e6ebf5"] },
+      "primary-hover": { "role": "primary", "displayName": "Deep Counter Navy", "canonical": "#172d56", "tonalRamp": ["#0a1428", "#111f3d", "#172d56", "#1e3a6e", "#3a5a8f", "#6d88b5", "#a9bbd8", "#e6ebf5"] },
+      "lost": { "role": "secondary", "displayName": "Lost Umber", "canonical": "#92400e", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fef3c7"] },
+      "lost-hover": { "role": "secondary", "displayName": "Dark Umber", "canonical": "#78350f", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fef3c7"] },
+      "lost-accent": { "role": "secondary", "displayName": "Lost Amber", "canonical": "#d97706", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fef3c7"] },
+      "lost-tint": { "role": "secondary", "displayName": "Lost Cream", "canonical": "#fef3c7", "tonalRamp": ["#78350f", "#92400e", "#b45309", "#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fef3c7"] },
+      "found": { "role": "tertiary", "displayName": "Found Forest", "canonical": "#166534", "tonalRamp": ["#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"] },
+      "found-hover": { "role": "tertiary", "displayName": "Deep Forest", "canonical": "#14532d", "tonalRamp": ["#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"] },
+      "found-accent": { "role": "tertiary", "displayName": "Found Leaf", "canonical": "#16a34a", "tonalRamp": ["#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"] },
+      "found-tint": { "role": "tertiary", "displayName": "Found Mint", "canonical": "#dcfce7", "tonalRamp": ["#14532d", "#166534", "#15803d", "#16a34a", "#22c55e", "#4ade80", "#86efac", "#dcfce7"] },
+      "danger": { "role": "tertiary", "displayName": "Alarm Red", "canonical": "#b91c1c", "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] },
+      "danger-tint": { "role": "tertiary", "displayName": "Alarm Blush", "canonical": "#fee2e2", "tonalRamp": ["#7f1d1d", "#991b1b", "#b91c1c", "#dc2626", "#ef4444", "#f87171", "#fca5a5", "#fee2e2"] },
+      "ink": { "role": "neutral", "displayName": "Slate Ink", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9"] },
+      "text": { "role": "neutral", "displayName": "Slate Text", "canonical": "#334155", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9"] },
+      "muted": { "role": "neutral", "displayName": "Quiet Slate", "canonical": "#556173", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#556173", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9"] },
+      "line": { "role": "neutral", "displayName": "Hairline", "canonical": "#e2e8f0", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"] },
+      "border-strong": { "role": "neutral", "displayName": "Firm Hairline", "canonical": "#cbd5e1", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9"] },
+      "surface": { "role": "neutral", "displayName": "Index White", "canonical": "#ffffff", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9", "#ffffff"] },
+      "soft": { "role": "neutral", "displayName": "Desk Mist", "canonical": "#f1f5f9", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f1f5f9"] },
+      "page": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#f6f5f1", "tonalRamp": ["#2b2a26", "#4a4842", "#6f6c64", "#99958b", "#c2beb3", "#e0ddd5", "#ece9e4", "#f6f5f1"] },
+      "hero": { "role": "neutral", "displayName": "Night Room", "canonical": "#0a0f1c", "tonalRamp": ["#05080f", "#0a0f1c", "#141c30", "#1f2a44", "#34405c", "#56627d", "#8a94aa", "#c9d3e1"] },
+      "hero-text": { "role": "neutral", "displayName": "Hero Mist", "canonical": "#c9d3e1", "tonalRamp": ["#05080f", "#0a0f1c", "#141c30", "#1f2a44", "#34405c", "#56627d", "#8a94aa", "#c9d3e1"] },
+      "focus-ring": { "role": "neutral", "displayName": "Focus Blue", "canonical": "#93c5fd", "tonalRamp": ["#1e3a8a", "#1e40af", "#1d4ed8", "#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#dbeafe"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The home hero question only, max 14ch, one sentence per line." },
+      "headline": { "displayName": "Headline", "purpose": "Page h1." },
+      "title": { "displayName": "Title", "purpose": "Section h2; enlarged on the home journey intro." },
+      "title-sm": { "displayName": "Title Small", "purpose": "h3, item card titles, panel headings." },
+      "numeral": { "displayName": "Numeral", "purpose": "Stat and listing counts, tabular figures." },
+      "body": { "displayName": "Body", "purpose": "All running copy and input text." },
+      "label": { "displayName": "Label", "purpose": "Field labels and button text." },
+      "tag": { "displayName": "Tag", "purpose": "LOST, FOUND and status tags." }
+    },
+    "shadows": [
+      { "name": "resting", "value": "0 1px 2px rgb(15 23 42 / 0.06)", "purpose": "Cards, panels and stats at rest." },
+      { "name": "lift", "value": "0 14px 30px -12px rgb(15 23 42 / 0.28), 0 2px 6px rgb(15 23 42 / 0.06)", "purpose": "Item card hover, with a 4px rise." },
+      { "name": "button-hover", "value": "0 6px 16px -8px rgb(15 23 42 / 0.5)", "purpose": "Filled buttons on hover; removed on press." },
+      { "name": "floating-menu", "value": "0 16px 40px rgb(15 23 42 / 0.16)", "purpose": "Account menu panel." },
+      { "name": "floating-toast", "value": "0 18px 40px -16px rgb(15 23 42 / 0.35), 0 2px 6px rgb(15 23 42 / 0.06)", "purpose": "Alert stack toasts." },
+      { "name": "example-sheet", "value": "0 20px 40px -24px rgb(15 23 42 / 0.3)", "purpose": "Journey vignettes." },
+      { "name": "focus", "value": "outline: 3px solid #93c5fd; outline-offset: 2px", "purpose": "Global focus-visible ring; menu items use an inset 2px ring of the same colour." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Default exponential ease-out for state changes, entrances and shared-element morphs." },
+      { "name": "ease-in-out", "value": "cubic-bezier(0.65, 0, 0.35, 1)", "purpose": "Outgoing route cross-fade only." },
+      { "name": "button-state", "value": "0.18s", "purpose": "Button background and shadow; press transform 0.12s." },
+      { "name": "card-hover", "value": "0.35s", "purpose": "Item card rise and shadow; photo zoom 0.6s; icon disc 0.45s." },
+      { "name": "focus-in", "value": "0.9s, blur 14px to 0, translateY 14px, 140ms per line + 80ms", "purpose": "Hero headline entrance, the page's one authored entrance." },
+      { "name": "rise-in", "value": "0.6s, translateY 12px, 110ms per step + 260ms", "purpose": "Hero lede, search, actions and listings after the headline." },
+      { "name": "list-stagger", "value": "0.5s card-in, 55ms per item, capped at 8 items", "purpose": "Lists that arrive together, once." },
+      { "name": "route-transition", "value": "old 160ms ease-in-out, new 280ms ease-out, shared elements 420ms ease-out", "purpose": "Route cross-fade and card-to-detail media and title morph." },
+      { "name": "menu-in", "value": "0.24s, translateY -8px, scale 0.95, origin top right", "purpose": "Account menu opening." },
+      { "name": "toast-in", "value": "0.42s, translateY 14px, scale 0.96, blur 4px", "purpose": "Toast arrival; timer bar runs linear for the alert timeout." },
+      { "name": "journey-reveal", "value": "0.6s opacity 0.35 to 1, translateY 18px, blur 3px", "purpose": "Journey step bodies as the scroll-linked beam reaches them." },
+      { "name": "lenis-scroll", "value": "duration 1.05s, easing 1 - (1 - t)^4", "purpose": "Inertial smooth scroll on fine pointers without reduced motion." },
+      { "name": "reduced-motion", "value": "fade-only 0.3s", "purpose": "Replacement for every entrance; hover transforms, view transitions, cursor ring, Lenis and toast timers are disabled." }
+    ],
+    "breakpoints": [
+      { "name": "xs", "value": "400px" },
+      { "name": "sm", "value": "640px" },
+      { "name": "journey", "value": "720px" },
+      { "name": "md", "value": "860px" },
+      { "name": "container", "value": "1180px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Default action in Counter Navy; also the header Report button.",
+      "html": "<button class=\"ds-btn\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Report an item</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 6px; border: 1px solid transparent; font-family: var(--font-body, 'Atkinson Hyperlegible Next Variable', system-ui, sans-serif); font-weight: 600; font-size: 0.95rem; line-height: 1.3; cursor: pointer; background: var(--primary, #1e3a6e); color: #fff; transition: background-color 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s cubic-bezier(0.16,1,0.3,1), transform 0.12s cubic-bezier(0.16,1,0.3,1); } .ds-btn:hover { background: var(--primary-hover, #172d56); box-shadow: 0 6px 16px -8px rgb(15 23 42 / 0.5); } .ds-btn:active { transform: translateY(1px) scale(0.985); box-shadow: none; } .ds-btn:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }"
+    },
+    {
+      "name": "Lost and Found Buttons",
+      "kind": "button",
+      "refersTo": "button-lost",
+      "description": "The two entry actions, in Lost Umber and Found Forest.",
+      "html": "<div class=\"ds-pair\"><a href=\"#\" class=\"ds-btn-sem ds-lost\">I lost something</a><a href=\"#\" class=\"ds-btn-sem ds-found\">I found something</a></div>",
+      "css": ".ds-pair { display: flex; gap: 12px; flex-wrap: wrap; } .ds-btn-sem { display: inline-flex; align-items: center; padding: 11px 20px; border-radius: 6px; border: 1px solid transparent; font-family: var(--font-body, system-ui, sans-serif); font-weight: 600; font-size: 0.95rem; line-height: 1.3; color: #fff; text-decoration: none; transition: background-color 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s cubic-bezier(0.16,1,0.3,1), transform 0.12s cubic-bezier(0.16,1,0.3,1); } .ds-lost { background: var(--lost, #92400e); } .ds-lost:hover { background: var(--lost-hover, #78350f); box-shadow: 0 6px 16px -8px rgb(15 23 42 / 0.5); } .ds-found { background: var(--found, #166534); } .ds-found:hover { background: var(--found-hover, #14532d); box-shadow: 0 6px 16px -8px rgb(15 23 42 / 0.5); } .ds-btn-sem:active { transform: translateY(1px) scale(0.985); box-shadow: none; } .ds-btn-sem:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Secondary action on white with a firm hairline.",
+      "html": "<button class=\"ds-btn-outline\">Create account</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; color: var(--ink, #0f172a); font-family: var(--font-body, system-ui, sans-serif); font-weight: 600; font-size: 0.95rem; line-height: 1.3; cursor: pointer; transition: background-color 0.18s cubic-bezier(0.16,1,0.3,1); } .ds-btn-outline:hover { background: var(--soft, #f1f5f9); } .ds-btn-outline:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive action: white with red hairline and red text.",
+      "html": "<button class=\"ds-btn-danger\">Withdraw claim</button>",
+      "css": ".ds-btn-danger { display: inline-flex; align-items: center; padding: 9px 16px; border-radius: 6px; border: 1px solid #fca5a5; background: #fff; color: var(--danger, #b91c1c); font-family: var(--font-body, system-ui, sans-serif); font-weight: 600; font-size: 0.95rem; line-height: 1.3; cursor: pointer; transition: background-color 0.18s cubic-bezier(0.16,1,0.3,1); } .ds-btn-danger:hover { background: var(--danger-tint, #fee2e2); } .ds-btn-danger:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Label above, white field with firm hairline, hint below in Quiet Slate.",
+      "html": "<div class=\"ds-field\"><label class=\"ds-label\" for=\"ds-q\">Search lost and found items</label><input class=\"ds-input\" id=\"ds-q\" placeholder=\"For example: blue water bottle library\" /><p class=\"ds-hint\">Search by what it is, its colour or the building.</p></div>",
+      "css": ".ds-field { max-width: 420px; } .ds-label { display: block; font-family: var(--font-body, system-ui, sans-serif); font-weight: 600; font-size: 0.95rem; color: var(--ink, #0f172a); margin-bottom: 6px; } .ds-input { width: 100%; box-sizing: border-box; font-family: var(--font-body, system-ui, sans-serif); font-size: 1.0625rem; color: var(--ink, #0f172a); background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 9px 12px; caret-color: var(--primary, #1e3a6e); } .ds-input:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; } .ds-hint { margin: 6px 0 0; font-family: var(--font-body, system-ui, sans-serif); font-size: 0.85rem; color: var(--muted, #556173); }"
+    },
+    {
+      "name": "Site Header",
+      "kind": "nav",
+      "description": "White bar with hairline; brand left, ink text links, primary Report button last.",
+      "html": "<header class=\"ds-header\"><a class=\"ds-brand\" href=\"#\"><span class=\"ds-mark\"></span>Campus Lost &amp; Found Hub</a><nav class=\"ds-nav\"><a href=\"#\" class=\"ds-active\">Browse items</a><a href=\"#\">Log in</a><a href=\"#\" class=\"ds-nav-btn\">Report an item</a></nav></header>",
+      "css": ".ds-header { display: flex; align-items: center; gap: 24px; min-height: 64px; padding: 8px 16px; background: #fff; border-bottom: 1px solid var(--line, #e2e8f0); font-family: var(--font-body, system-ui, sans-serif); } .ds-brand { display: flex; align-items: center; gap: 10px; margin-right: auto; color: var(--ink, #0f172a); font-weight: 700; text-decoration: none; } .ds-mark { width: 32px; height: 32px; border-radius: 7px; background: var(--primary, #1e3a6e); } .ds-nav { display: flex; align-items: center; gap: 20px; } .ds-nav a { color: var(--ink, #0f172a); font-weight: 500; text-decoration: none; text-underline-offset: 0.2em; } .ds-nav a:hover { color: var(--primary, #1e3a6e); text-decoration: underline; } .ds-nav a.ds-active { color: var(--primary, #1e3a6e); } .ds-nav a.ds-nav-btn { padding: 9px 16px; border-radius: 6px; background: var(--primary, #1e3a6e); color: #fff; font-weight: 600; font-size: 0.95rem; } .ds-nav a.ds-nav-btn:hover { background: var(--primary-hover, #172d56); color: #fff; text-decoration: none; } .ds-nav a:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; }"
+    },
+    {
+      "name": "Tags",
+      "kind": "chip",
+      "refersTo": "tag-lost",
+      "description": "LOST, FOUND and plain-language status tags; colour always paired with the word.",
+      "html": "<div class=\"ds-tags\"><span class=\"ds-tag ds-tag-lost\">LOST</span><span class=\"ds-tag ds-tag-found\">FOUND</span><span class=\"ds-tag ds-tag-status\">Possible match</span></div>",
+      "css": ".ds-tags { display: flex; gap: 6px; } .ds-tag { display: inline-block; font-family: var(--font-body, system-ui, sans-serif); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 4px; border: 1px solid; } .ds-tag-lost { background: var(--lost-tint, #fef3c7); color: var(--lost, #92400e); border-color: #fcd34d; } .ds-tag-found { background: var(--found-tint, #dcfce7); color: var(--found, #166534); border-color: #86efac; } .ds-tag-status { background: var(--soft, #f1f5f9); color: var(--text, #334155); border-color: var(--line, #e2e8f0); }"
+    },
+    {
+      "name": "Item Card",
+      "kind": "card",
+      "refersTo": "card-item",
+      "description": "Signature card: 3px semantic top edge (owner-approved exception), 4:3 media or category icon disc, rises to Lift on hover.",
+      "html": "<a class=\"ds-card ds-card-lost\" href=\"#\"><div class=\"ds-card-media\"><span class=\"ds-disc\"><svg width=\"52\" height=\"52\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M10 2h4v3h-4zM9 5h6l1 3v12a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2V8z M8 12h8\"/></svg></span></div><div class=\"ds-card-body\"><span class=\"ds-card-tag\">LOST</span><h3>Blue steel water bottle</h3><p class=\"ds-meta\">Library, 2nd floor</p><p class=\"ds-meta\">Oct 22, 2026</p></div></a>",
+      "css": ".ds-card { display: flex; flex-direction: column; width: 260px; border: 1px solid var(--line, #e2e8f0); border-top: 3px solid var(--primary, #1e3a6e); border-radius: 6px; background: #fff; overflow: hidden; text-decoration: none; color: var(--text, #334155); font-family: var(--font-body, system-ui, sans-serif); box-shadow: 0 1px 2px rgb(15 23 42 / 0.06); transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s cubic-bezier(0.16,1,0.3,1), border-color 0.2s ease; } .ds-card-lost { border-top-color: var(--lost-accent, #d97706); } .ds-card:hover { border-color: #b4bfcf; border-top-color: var(--lost-accent, #d97706); transform: translateY(-4px); box-shadow: 0 14px 30px -12px rgb(15 23 42 / 0.28), 0 2px 6px rgb(15 23 42 / 0.06); } .ds-card:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; } .ds-card-media { aspect-ratio: 4 / 3; background: #ece9e4; display: grid; place-items: center; } .ds-disc { width: 96px; height: 96px; border-radius: 50%; background: rgb(255 255 255 / 0.7); display: grid; place-items: center; color: var(--lost, #92400e); transition: transform 0.45s cubic-bezier(0.16,1,0.3,1); } .ds-card:hover .ds-disc { transform: scale(1.06) rotate(-4deg); } .ds-card-body { padding: 12px 14px 16px; } .ds-card-tag { display: inline-block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 4px; border: 1px solid #fcd34d; background: var(--lost-tint, #fef3c7); color: var(--lost, #92400e); } .ds-card h3 { margin: 8px 0 6px; font-family: var(--font-display, 'Bricolage Grotesque Variable', system-ui, sans-serif); font-size: 1.12rem; font-weight: 680; letter-spacing: -0.01em; line-height: 1.12; color: var(--ink, #0f172a); transition: color 0.2s ease; } .ds-card:hover h3 { color: var(--primary, #1e3a6e); } .ds-meta { margin: 0 0 2px; font-size: 0.85rem; color: var(--muted, #556173); }"
+    },
+    {
+      "name": "Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Alert stack notification with tinted icon square, close button and a pausing timer bar.",
+      "html": "<div class=\"ds-toast\"><span class=\"ds-toast-icon\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 12.5 9 17.5 20 6.5\"/></svg></span><div><p class=\"ds-toast-title\">Report saved</p><p class=\"ds-toast-msg\">We will tell you when a likely match appears.</p></div><button class=\"ds-toast-close\" aria-label=\"Dismiss\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6 6 18\"/></svg></button><span class=\"ds-toast-timer\"></span></div>",
+      "css": ".ds-toast { position: relative; overflow: hidden; display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: start; width: 360px; padding: 12px 12px 14px 14px; background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 8px; box-shadow: 0 18px 40px -16px rgb(15 23 42 / 0.35), 0 2px 6px rgb(15 23 42 / 0.06); font-family: var(--font-body, system-ui, sans-serif); } .ds-toast-icon { width: 30px; height: 30px; border-radius: 6px; display: grid; place-items: center; background: var(--found-tint, #dcfce7); color: var(--found, #166534); } .ds-toast-title { margin: 0; font-weight: 650; font-size: 0.95rem; color: var(--ink, #0f172a); } .ds-toast-msg { margin: 2px 0 0; font-size: 0.875rem; color: var(--text, #334155); } .ds-toast-close { border: 0; background: none; color: var(--muted, #556173); padding: 2px; border-radius: 4px; cursor: pointer; display: inline-flex; } .ds-toast-close:hover { color: var(--ink, #0f172a); background: var(--soft, #f1f5f9); } .ds-toast-close:focus-visible { outline: 3px solid #93c5fd; outline-offset: 2px; } .ds-toast-timer { position: absolute; left: 0; bottom: 0; height: 3px; width: 60%; background: var(--found-accent, #16a34a); opacity: 0.18; }"
+    },
+    {
+      "name": "Journey Vignette",
+      "kind": "custom",
+      "description": "White example sheet of real interface pieces, always badged Example.",
+      "html": "<div class=\"ds-vignette\"><span class=\"ds-vg-label\">Example</span><div class=\"ds-vg-field\"><span>What</span><strong>Black Pixel phone, cracked blue case</strong></div><div class=\"ds-vg-match\"><strong>Black Pixel phone</strong><span class=\"ds-vg-score\">88% similar</span></div></div>",
+      "css": ".ds-vignette { position: relative; display: grid; gap: 12px; width: 360px; padding: 20px 18px 16px; border: 1px solid var(--line, #e2e8f0); border-radius: 10px; background: #fff; box-shadow: 0 20px 40px -24px rgb(15 23 42 / 0.3); font-family: var(--font-body, system-ui, sans-serif); } .ds-vg-label { position: absolute; top: -10px; right: 14px; font-size: 0.72rem; font-weight: 700; color: var(--muted, #556173); background: #fff; border: 1px solid var(--line, #e2e8f0); border-radius: 4px; padding: 1px 8px; } .ds-vg-field { display: grid; gap: 2px; padding: 8px 10px; border: 1px solid var(--line, #e2e8f0); border-radius: 6px; background: #fbfcfe; } .ds-vg-field span { font-size: 0.78rem; font-weight: 600; color: var(--muted, #556173); } .ds-vg-field strong { font-weight: 600; color: var(--ink, #0f172a); } .ds-vg-match { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; color: var(--ink, #0f172a); } .ds-vg-score { font-family: var(--font-display, 'Bricolage Grotesque Variable', system-ui, sans-serif); font-weight: 700; color: var(--found, #166534); font-variant-numeric: tabular-nums; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Lost and Found Desk",
+    "overview": "The system is the campus office counter made into a website: a calm, orderly navy desk where every item is logged, tagged lost or found, and handed back in person. Surfaces are white index cards and panels laid on a warm off-white ground, held together by thin slate hairlines and soft one-pixel shadows. Colour carries meaning before it carries mood: navy is the service itself, brown-orange is something missing, green is something waiting to go home. The one dark room is the home hero, where slow cyan-to-blue light beams drift behind the opening question.\n\nDensity is practical rather than airy. Pages are used between classes on a phone and at a staff counter on desktop, so lists, tables and forms stay compact and scannable, with generous space reserved for the hero and the home journey. Motion is advanced but purposeful: things come into focus, lists arrive once, a card opens into its own detail page, and the journey beam fills from lost to found as you scroll. Every motion has a reduced-motion path, and none of it carries information.\n\nThe owner has rejected purple gradients, pill-shaped buttons, emoji icons, fabricated metrics or reviews, vague hero text, placeholder content and AI-generated stock photography. These are binding.",
+    "keyCharacteristics": [
+      "Navy primary, brown-orange for lost, green for found; the pair is the brand's story.",
+      "Warm off-white page ground with a faint animated navy hairline pattern behind all content.",
+      "White cards and panels with slate hairline borders and a near-invisible resting shadow.",
+      "Bricolage Grotesque for headings and numerals, Atkinson Hyperlegible Next for everything read.",
+      "Gently squared corners (6px default); nothing is a pill.",
+      "One exponential ease-out drives nearly all motion; every effect has a reduced-motion fallback."
+    ],
+    "rules": [
+      { "name": "The Lost Is Warm, Found Is Green Rule", "body": "Brown-orange means lost and green means found, on every surface, every time. Neither hue is used for decoration or for any other meaning, and colour is never the only signal: the word LOST or FOUND always accompanies it.", "section": "colors" },
+      { "name": "The No Purple Rule", "body": "No purple anywhere, including gradients and the hero beams (which stay in the cyan-to-blue range, hue 190 to 235).", "section": "colors" },
+      { "name": "The Two-Step Semantic Rule", "body": "Each semantic hue has a deep step for text and fills (lost, found) and a bright step for marks, borders and swatches (lost-accent, found-accent). Use the deep step whenever text sits on it or in it.", "section": "colors" },
+      { "name": "The Display Is for Headings Rule", "body": "Bricolage appears only on h1 to h3 and on numerals. Everything a person reads or types is Atkinson Hyperlegible Next. Small headings that act as labels (the hero listings heading) switch to the body face.", "section": "typography" },
+      { "name": "The Tabular Numbers Rule", "body": "Counts, scores, table cells and badges use tabular figures so columns of numbers do not jitter.", "section": "typography" },
+      { "name": "The Lift on Intent Rule", "body": "Shadows deepen only in answer to a pointer or because the layer floats. Nothing rests at Lift.", "section": "elevation" },
+      { "name": "The Soft Shadow Rule", "body": "Every shadow is a blurred, slate-tinted ambient shadow. No hard offset shadows.", "section": "elevation" },
+      { "name": "The No Pill Rule", "body": "Buttons and tags never take a pill or fully rounded shape. Nothing interactive exceeds 10px radius.", "section": "shapes" },
+      { "name": "The Reduced Motion Rule", "body": "Every animation has a reduced-motion path: entrances become a 0.3s fade, hover transforms and view transitions are removed, the cursor ring, Lenis and toast timers are switched off, and canvases draw a single still frame.", "section": "components" }
+    ],
+    "dos": [
+      "Do use Counter Navy for the service's own actions and Lost Umber / Found Forest only for lost and found actions and marks.",
+      "Do pair every lost or found colour with the word LOST or FOUND, or another text cue.",
+      "Do keep corners at 6px by default, 4px for small inline marks, 10px for floating sheets.",
+      "Do set headings and numerals in Bricolage Grotesque and all reading and input text in Atkinson Hyperlegible Next.",
+      "Do keep resting surfaces at the Resting shadow and reserve Lift for hover.",
+      "Do use the shared ease-out for motion and provide a reduced-motion path for every new effect.",
+      "Do show real data or nothing: hide a count or panel that cannot load rather than filling it.",
+      "Do badge any illustrative interface sample as an example, as the journey vignettes do.",
+      "Do draw icons as 24-grid stroke SVGs in currentColor, hidden from screen readers when decorative."
+    ],
+    "donts": [
+      "Don't use purple, purple gradients, or beams outside the cyan-to-blue range.",
+      "Don't make pill-shaped or fully rounded buttons or tags.",
+      "Don't use emoji as icons.",
+      "Don't show fake reviews, testimonials, metrics, counters or placeholder content.",
+      "Don't use AI-generated stock photos; item photos come from reports, otherwise use the category icon disc.",
+      "Don't write vague hero text; the hero asks the user's actual question.",
+      "Don't use em dashes in interface copy.",
+      "Don't add coloured borders to cards other than the item card's 3px top edge; that edge is a deliberate exception from the owner's reference.",
+      "Don't use hard offset shadows.",
+      "Don't let any decorative effect (beams, Sliding Ease, cursor ring) carry information."
+    ]
+  }
+}

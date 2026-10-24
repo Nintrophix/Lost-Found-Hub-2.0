@@ -60,8 +60,8 @@ const PAGE_SIZE = 12;
       @if (loaded()) {
         <p class="muted small" aria-live="polite">{{ total() }} {{ total() === 1 ? 'item' : 'items' }} found</p>
         @if (items().length) {
-          <div class="cards">
-            @for (item of items(); track item.id) { <app-item-card [item]="item" /> }
+          <div class="cards stagger">
+            @for (item of items(); track item.id; let i = $index) { <app-item-card [item]="item" [style.--i]="i" /> }
           </div>
           @if (pages() > 1) {
             <nav class="pagination" aria-label="Pages">

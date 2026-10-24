@@ -55,6 +55,14 @@ Other commands from the root:
 
 Use your real campus address in those commands, and register it on the site (or with `create-admin`) first. `set-role` only works on an existing account.
 
+### Sending real emails
+
+By default (`EMAIL_BACKEND=console`) the backend does not send email: each message, including verification and password reset links, is printed in the backend terminal. To deliver real email:
+
+1. Pick a mail account to send from. For Gmail: turn on 2-Step Verification, then create an App Password at https://myaccount.google.com/apppasswords.
+2. In `backend/.env`, set `EMAIL_BACKEND=smtp` and fill in `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_TLS=true`, `SMTP_USERNAME`, `SMTP_PASSWORD` (the app password) and `EMAIL_FROM` (the same address as the username). The file has these lines ready, commented out.
+3. Restart the backend, then check delivery: `npm run cli -- send-test-email --to you@srmist.edu.in`
+
 Common problems:
 - **`uvicorn` or `pip` is not recognized, or `No module named 'app'`:** the command ran outside `backend/` or without its virtual environment. Use the `npm run` commands above from the root.
 - **`Could not read package.json`:** `npm start` ran in a folder without one. From the root, `npm start` and `npm run frontend` both start the frontend.
