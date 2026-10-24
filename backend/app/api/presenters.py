@@ -46,7 +46,7 @@ def claim_response(claim: Claim, viewer: User) -> ClaimResponse:
 
 
 def person(user: User) -> PersonSummary:
-    return PersonSummary(id=user.id, name=user.name, email=user.email)
+    return PersonSummary(id=user.id, name=user.name, email=user.email, campus_id=user.campus_id)
 
 
 def staff_claim_response(claim: Claim, viewer: User) -> StaffClaimResponse:

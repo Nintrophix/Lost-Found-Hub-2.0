@@ -26,8 +26,12 @@ def token_from(outbox, index: int = -1) -> str:
     return match.group(1)
 
 
-def register(client, email="alex@example.edu", password=PASSWORD, name="Alex Doe"):
-    return client.post("/api/auth/register", json={"name": name, "email": email, "password": password})
+PROFILE = {"campus_id": "RA2111003010123", "department": "Computer Science and Engineering"}
+
+
+def register(client, email="alex@example.edu", password=PASSWORD, name="Alex Doe", **profile):
+    body = {"name": name, "email": email, "password": password, **PROFILE, **profile}
+    return client.post("/api/auth/register", json=body)
 
 
 def login(client, email="alex@example.edu", password=PASSWORD):
@@ -98,10 +102,85 @@ def test_registration_rejects_non_campus_domain(client, outbox):
 def test_registration_cannot_request_elevated_role(client, db):
     response = client.post(
         "/api/auth/register",
-        json={"name": "Eve", "email": "eve@example.edu", "password": PASSWORD, "role": "ADMIN"},
+        json={"name": "Eve", "email": "eve@example.edu", "password": PASSWORD, "role": "ADMIN", **PROFILE},
     )
     assert response.status_code == 422
     assert db.scalar(select(User).where(User.email == "eve@example.edu")) is None
+
+
+# Profile fields
+
+def test_registration_stores_profile_details(client, outbox, db):
+    response = register(client, campus_id=" ra 2111003010123 ", phone="+91 98765-43210")
+    assert response.status_code == 202
+    user = db.scalar(select(User).where(User.email == "alex@example.edu"))
+    assert (user.campus_id, user.department, user.phone) == (
+        "RA2111003010123", "Computer Science and Engineering", "+919876543210",
+    )
+    client.post("/api/auth/verify-email", json={"token": token_from(outbox)})
+    body = login(client).json()
+    assert body["campus_id"] == "RA2111003010123" and body["phone"] == "+919876543210"
+
+
+@pytest.mark.parametrize(
+    "profile",
+    [{"campus_id": ""}, {"campus_id": "RA-21"}, {"campus_id": "A" * 21}, {"department": "x"},
+     {"phone": "12345"}, {"phone": "call me"}, {"campus_id": None}],
+)
+def test_registration_validates_profile(client, profile):
+    assert register(client, **profile).status_code == 422
+
+
+def test_srm_id_is_unique(client, outbox):
+    assert register(client).status_code == 202
+    response = register(client, email="someone.else@example.edu")
+    assert response.status_code == 409 and "SRM ID" in response.json()["detail"]
+    assert len(outbox.outbox) == 1  # nothing was sent for the rejected sign-up
+
+
+def test_profile_update(signed_in, db):
+    url = "/api/auth/me"
+    response = signed_in.patch(url, json={"department": "Mechanical Engineering", "phone": "9876543210"},
+                               headers=csrf(signed_in))
+    assert response.status_code == 200
+    assert response.json()["department"] == "Mechanical Engineering" and response.json()["phone"] == "9876543210"
+    assert signed_in.patch(url, json={"phone": None}, headers=csrf(signed_in)).json()["phone"] is None
+    assert signed_in.patch(url, json={"name": None}, headers=csrf(signed_in)).json()["name"] == "Alex Doe"
+    for fixed in ({"email": "new@example.edu"}, {"campus_id": "RA0000000000001"}, {"role": "ADMIN"}):
+        assert signed_in.patch(url, json=fixed, headers=csrf(signed_in)).status_code == 422
+    assert signed_in.patch(url, json={"department": "Civil"}).status_code == 403  # CSRF
+    log = db.scalar(select(AuditLog).where(AuditLog.action == "user.profile_updated"))
+    assert log.details == {"fields": ["department", "phone"]} and "9876543210" not in str(log.details)
+
+
+# Allowed email domain
+
+def test_only_allowed_domain_can_register(client, outbox):
+    response = register(client, email="alex@gmail.com")
+    assert response.status_code == 422 and "@example.edu" in response.json()["detail"]
+    assert register(client, email="alex@sub.example.edu").status_code == 422  # exact match only
+    assert outbox.outbox == []
+
+
+def test_other_domains_blocked_at_login_and_on_every_request(signed_in, make_client, db):
+    # An account from a domain that is no longer allowed (e.g. after ALLOWED_EMAIL_DOMAINS changed).
+    outsider = make_verified(db, "outsider@gmail.com")
+    other = make_client()
+    response = login(other, "outsider@gmail.com")
+    assert response.status_code == 403 and "@example.edu" in response.json()["detail"]
+    assert other.cookies.get(SESSION_COOKIE) is None
+
+    # A live session stops working as soon as its email is outside the allowed domains.
+    user = db.scalar(select(User).where(User.email == "alex@example.edu"))
+    user.email = "alex@gmail.com"
+    db.commit()
+    assert signed_in.get("/api/auth/me").status_code == 401
+    assert signed_in.get("/api/auth/session").json()["user"] is None
+    assert outsider.id
+
+
+def test_session_reports_allowed_domains(client):
+    assert client.get("/api/auth/session").json() == {"user": None, "allowed_email_domains": ["example.edu"]}
 
 
 @pytest.mark.parametrize("password", ["short", " " * 20, "x" * 129])
@@ -160,6 +239,12 @@ def test_session_cookie_flags_and_hashed_storage(verified_user, db):
     stored = db.scalar(select(UserSession))
     assert stored.token_hash == hash_token(raw)
     assert stored.csrf_token_hash == hash_token(verified_user.cookies.get(CSRF_COOKIE))
+
+
+def test_session_endpoint_never_errors(signed_in, make_client):
+    assert make_client().get("/api/auth/session").json()["user"] is None
+    body = signed_in.get("/api/auth/session").json()
+    assert body["user"]["email"] == "alex@example.edu" and "password_hash" not in body["user"]
 
 
 def test_me_requires_session(client):

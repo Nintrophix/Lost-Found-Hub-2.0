@@ -44,6 +44,18 @@ def test_user_dashboard_reflects_real_data(flow):  # noqa: F811
     assert sum(stranger["reports"]["LOST"].values()) == 0
 
 
+def test_public_stats_are_counts_only(flow, client):  # noqa: F811
+    f = flow
+    assert client.get("/api/public-stats").json() == {
+        "open_lost_reports": 1, "found_items_waiting": 1, "items_returned": 0,
+    }
+    cid, hid = verified(f)
+    f.staff.post(f"/api/staff/handovers/{hid}/complete", json={"identity_confirmed": True})
+    assert client.get("/api/public-stats").json() == {
+        "open_lost_reports": 1, "found_items_waiting": 0, "items_returned": 1,
+    }
+
+
 def test_dashboard_requires_sign_in(api, client):  # noqa: F811
     assert client.get("/api/dashboard").status_code == 401
 

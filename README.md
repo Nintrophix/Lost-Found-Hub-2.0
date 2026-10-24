@@ -8,21 +8,61 @@ Status and next steps: see [updates.md](updates.md).
 
 | Layer | Technology |
 |---|---|
-| Frontend | Angular, TypeScript, HTML, CSS (not started; see updates.md) |
+| Frontend | Angular 21, TypeScript, HTML, CSS (`frontend/`) |
 | Backend | Python 3.12, FastAPI |
 | Database | SQLite via SQLAlchemy 2.x |
 | Migrations | Alembic |
-| Tests | Pytest |
+| Tests | Pytest (backend), Vitest via Angular CLI (frontend) |
 | Images | Local filesystem (`backend/uploads/`), metadata in SQLite |
 
 ## Prerequisites
 
 - Python 3.12+
-- Node.js 20+ and npm (frontend phase only)
+- Node.js 20.19+, 22.12+ or 24+ and npm
 
-## Backend setup
+## Quick start
 
-All commands run from `backend/`.
+Run these from the repository root (the folder containing this README). They work in PowerShell, Command Prompt, Git Bash and macOS/Linux shells, and they find the backend's virtual environment themselves, so nothing needs activating.
+
+One-time setup: creates `backend/.venv`, installs everything, creates `backend/.env` from the example, migrates and seeds the database, and installs the frontend packages.
+
+```bash
+npm run setup
+```
+
+Then start each server in its own terminal:
+
+```bash
+npm run backend
+```
+
+```bash
+npm run frontend
+```
+
+Open http://localhost:4200. Only `@srmist.edu.in` email addresses can register and sign in (`ALLOWED_EMAIL_DOMAINS` in `backend/.env`). Sign-up asks for the SRM ID (register number or employee ID) and department; phone is optional. Everyone can update their details on the dashboard.
+
+On Windows, `npm run backend` restarts the backend itself when a file in `backend/app` or `backend/.env` changes. It does not use uvicorn's `--reload`, because uvicorn's Windows reload sends a Ctrl+C to the whole terminal, which closes npm. On macOS and Linux it uses `--reload`.
+
+Other commands from the root:
+
+| Command | What it does |
+|---|---|
+| `npm test` | Backend and frontend tests |
+| `npm run cli -- create-admin --email you@your-campus.edu --name "Your Name"` | Create an admin (prompts for the password) |
+| `npm run cli -- set-role --email you@your-campus.edu --role ADMIN` | Change the role of an account that already exists |
+| `npm run cli -- cleanup --dry-run` | Preview housekeeping |
+
+Use your real campus address in those commands, and register it on the site (or with `create-admin`) first. `set-role` only works on an existing account.
+
+Common problems:
+- **`uvicorn` or `pip` is not recognized, or `No module named 'app'`:** the command ran outside `backend/` or without its virtual environment. Use the `npm run` commands above from the root.
+- **`Could not read package.json`:** `npm start` ran in a folder without one. From the root, `npm start` and `npm run frontend` both start the frontend.
+- **Address already in use (port 8000 or 4200):** another copy of the server is still running. Stop it with Ctrl+C in its terminal.
+
+## Backend setup (manual)
+
+`npm run setup` does all of this. To do it by hand, run these from `backend/`:
 
 ```bash
 python -m venv .venv
@@ -102,11 +142,11 @@ After that, admins can manage roles and account status through `PATCH /api/admin
 
 ## Run
 
-```bash
-uvicorn app.main:app --reload
-```
+From the repository root, in two terminals: `npm run backend` and `npm run frontend` (see Quick start). These are the same as running `uvicorn app.main:app --reload` inside `backend/` with its virtual environment activated, and `npm start` inside `frontend/`.
 
-Health check: `http://localhost:8000/api/health`. API docs: `http://localhost:8000/api/docs` (disabled when `ENVIRONMENT=production`).
+Open http://localhost:4200. The Angular dev server proxies `/api` to the backend on port 8000. Health check: `http://localhost:8000/api/health`. API docs: `http://localhost:8000/api/docs` (disabled when `ENVIRONMENT=production`).
+
+In development, verification and password reset emails are printed in the backend terminal; open the link shown there.
 
 ## Test
 
@@ -115,6 +155,12 @@ python -m pytest
 ```
 
 Tests build a fresh database per test by running the Alembic migrations, so they also verify that migrations match the models. They pin their own settings, so a local `.env` does not affect them.
+
+Frontend tests, from `frontend/`:
+
+```bash
+npm test -- --watch=false
+```
 
 ## Security
 
@@ -132,7 +178,7 @@ The backend is a single FastAPI process with a local SQLite file. For a campus d
 
 1. Set `ENVIRONMENT=production`, `COOKIE_SECURE=true`, `EMAIL_BACKEND=smtp` with the `SMTP_*` values, `FRONTEND_BASE_URL`, `CORS_ORIGINS` and `ALLOWED_EMAIL_DOMAINS`. The app refuses to start with unsafe production settings, and `/api/docs` is disabled.
 2. Run one worker (`uvicorn app.main:app --host 127.0.0.1 --port 8000`). Rate limits are kept in process memory, and SQLite allows one writer at a time.
-3. Put a reverse proxy in front for HTTPS. Serve the built Angular app and proxy `/api` to uvicorn on the same origin, so cookies and the CSRF header work. Cap request bodies at the proxy as well (for example `client_max_body_size 7m` in nginx). If the proxy should pass client IPs for rate limiting, start uvicorn with `--proxy-headers --forwarded-allow-ips <proxy ip>`.
+3. Build the frontend with your public address so the sitemap is correct: `SITE_URL=https://lostfound.university.edu npm run build` in `frontend/`. Put a reverse proxy in front for HTTPS: serve `frontend/dist/lost-found-hub/browser` with a fallback to `index.html` for app routes, and proxy `/api` to uvicorn on the same origin, so cookies and the CSRF header work. Cap request bodies at the proxy as well (for example `client_max_body_size 7m` in nginx). If the proxy should pass client IPs for rate limiting, start uvicorn with `--proxy-headers --forwarded-allow-ips <proxy ip>`.
 4. Keep `data/` and `uploads/` outside the web root, writable only by the service account.
 5. Schedule `python -m app.cli cleanup` daily and `python -m app.db.backup backup` at least daily, and copy backups (database and `uploads/`) off the machine.
 6. Run `alembic upgrade head` on every release before starting the new version.

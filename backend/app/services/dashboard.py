@@ -36,6 +36,19 @@ def _report_counts(db: Session, *conditions: ColumnElement[bool]) -> dict[str, d
     return {t.value: _counts(db, Item.status, ItemStatus, Item.report_type == t, *conditions) for t in ReportType}
 
 
+def public_stats(db: Session) -> dict:
+    waiting = (ItemStatus.OPEN, ItemStatus.MATCHED)
+
+    def count(*conditions: ColumnElement[bool]) -> int:
+        return db.scalar(select(func.count(Item.id)).where(*conditions)) or 0
+
+    return {
+        "open_lost_reports": count(Item.report_type == ReportType.LOST, Item.status.in_(waiting)),
+        "found_items_waiting": count(Item.report_type == ReportType.FOUND, Item.status.in_(waiting)),
+        "items_returned": count(Item.report_type == ReportType.FOUND, Item.status == ItemStatus.RETURNED),
+    }
+
+
 def user_dashboard(db: Session, user: User) -> dict:
     db.flush()
     recent = db.scalars(

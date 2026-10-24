@@ -53,6 +53,7 @@ class PersonSummary(BaseModel):
     id: int
     name: str
     email: str
+    campus_id: str | None
 
 
 class HandoverSummary(BaseModel):

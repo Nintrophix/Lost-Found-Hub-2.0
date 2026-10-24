@@ -14,6 +14,14 @@ from app.schemas.matches import MatchResponse
 StatusCounts = dict[str, int]
 
 
+class PublicStats(BaseModel):
+    """Aggregate counts only; never item details, which require sign-in."""
+
+    open_lost_reports: int
+    found_items_waiting: int
+    items_returned: int
+
+
 class UserDashboard(BaseModel):
     reports: dict[str, StatusCounts]  # keyed by report type, then item status
     recent_reports: list[ItemResponse]

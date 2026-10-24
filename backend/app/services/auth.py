@@ -11,7 +11,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.core.rate_limit import allow_for_key, is_limited_for_key, record_for_key
 from app.core.security import (
     burn_password_check,
@@ -47,6 +47,15 @@ class IssuedSession:
 
 def normalise_email(email: str) -> str:
     return email.strip().lower()
+
+
+def email_domain_allowed(email: str, settings: Settings) -> bool:
+    return email.rsplit("@", 1)[-1].lower() in settings.allowed_email_domains
+
+
+def domain_error(settings: Settings) -> str:
+    domains = " or ".join(f"@{d}" for d in settings.allowed_email_domains)
+    return f"Only {domains} email addresses can use this service."
 
 
 def _user_by_email(db: Session, email: str) -> User | None:
@@ -125,15 +134,31 @@ def _send_account_exists(sender: EmailSender, settings: Settings, user: User) ->
     )
 
 
-def register(db: Session, sender: EmailSender, settings: Settings, name: str, email: str, password: str) -> None:
+def register(
+    db: Session,
+    sender: EmailSender,
+    settings: Settings,
+    name: str,
+    email: str,
+    password: str,
+    campus_id: str,
+    department: str,
+    phone: str | None,
+) -> None:
     """Create a USER account. Responds identically whether or not the email is already registered."""
     email = normalise_email(email)
-    if email.rsplit("@", 1)[-1] not in settings.allowed_email_domains:
-        raise ServiceError(422, "Use your campus email address to register.")
+    if not email_domain_allowed(email, settings):
+        raise ServiceError(422, domain_error(settings))
 
     existing = _user_by_email(db, email)
     if existing is None:
-        user = User(name=name, email=email, password_hash=hash_password(password), role=UserRole.USER)
+        taken = db.scalar(select(User.id).where(User.campus_id == campus_id))
+        if taken is not None:
+            raise ServiceError(
+                409, "This SRM ID is already linked to an account. If it is yours, reset that account's password."
+            )
+        user = User(name=name, email=email, password_hash=hash_password(password), role=UserRole.USER,
+                    campus_id=campus_id, department=department, phone=phone)
         db.add(user)
         try:
             db.flush()
@@ -197,6 +222,8 @@ def login(db: Session, settings: Settings, email: str, password: str) -> IssuedS
         db.commit()
         raise ServiceError(401, INVALID_CREDENTIALS)
     # Account state is only disclosed after the password is proven.
+    if not email_domain_allowed(user.email, settings):
+        raise ServiceError(403, domain_error(settings))
     if user.account_status != AccountStatus.ACTIVE:
         raise ServiceError(403, "This account is not active. Contact campus support.")
     if user.email_verified_at is None:
@@ -228,6 +255,9 @@ def resolve_session(db: Session, raw_token: str) -> UserSession | None:
         return None
     user = session.user
     if user.account_status != AccountStatus.ACTIVE or user.email_verified_at is None:
+        return None
+    # Checked on every request, so narrowing ALLOWED_EMAIL_DOMAINS takes effect for live sessions too.
+    if not email_domain_allowed(user.email, get_settings()):
         return None
     if now - session.last_seen_at >= LAST_SEEN_RESOLUTION:
         session.last_seen_at = now
@@ -277,6 +307,17 @@ def change_password(db: Session, session: UserSession, current_password: str, ne
     _revoke_sessions(db, user.id, keep_session_id=session.id)
     audit.record(db, "auth.password_changed", "user", user.id, actor_id=user.id)
     db.commit()
+
+
+def update_profile(db: Session, user: User, changes: dict) -> User:
+    """Update the signed-in user's own name, department or phone. Email and SRM ID are fixed."""
+    changed = sorted(field for field, value in changes.items() if getattr(user, field) != value)
+    for field in changed:
+        setattr(user, field, changes[field])
+    if changed:
+        audit.record(db, "user.profile_updated", "user", user.id, actor_id=user.id, details={"fields": changed})
+        db.commit()
+    return user
 
 
 def update_user(

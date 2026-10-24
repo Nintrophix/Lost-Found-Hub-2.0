@@ -21,6 +21,9 @@ Source of truth: `backend/app/db/models.py` and `backend/migrations/versions/`. 
 | name | VARCHAR(120) | not blank |
 | email | VARCHAR(254) | unique, must be lowercase |
 | password_hash | VARCHAR(255) | |
+| campus_id | VARCHAR(20) null | SRM register number or employee ID; unique, must be uppercase. Required by the API at sign-up; null only for older or CLI-created accounts |
+| department | VARCHAR(100) null | required by the API at sign-up |
+| phone | VARCHAR(20) null | optional; digits with optional leading `+` |
 | role | user_role | `USER` (default), `STAFF`, `ADMIN`. Registration always creates `USER`. |
 | email_verified_at | DATETIME null | null means unverified |
 | account_status | account_status | `ACTIVE` (default), `SUSPENDED`, `DEACTIVATED` |
@@ -142,3 +145,4 @@ Enforced in the service layer (`app/services/items.py`, `matches.py`, `claims.py
 |---|---|---|
 | 8596481954a8 | `20261024_8596481954a8_initial_schema.py` | All tables except user_sessions |
 | 56b78d76eb8e | `20261024_56b78d76eb8e_add_user_sessions.py` | user_sessions |
+| 656d005407df | `20261024_656d005407df_add_user_profile_fields.py` | users.campus_id (unique, uppercase check), department, phone |

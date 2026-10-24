@@ -1,0 +1,13 @@
+{
+  "name": "campus-lost-found-hub",
+  "private": true,
+  "description": "Repository-root shortcuts for the backend (FastAPI) and frontend (Angular). Run from this folder.",
+  "scripts": {
+    "setup": "node scripts/dev.mjs setup",
+    "backend": "node scripts/dev.mjs backend",
+    "frontend": "node scripts/dev.mjs frontend",
+    "start": "node scripts/dev.mjs frontend",
+    "cli": "node scripts/dev.mjs cli",
+    "test": "node scripts/dev.mjs test"
+  }
+}

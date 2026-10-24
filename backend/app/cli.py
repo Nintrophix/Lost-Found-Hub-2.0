@@ -22,7 +22,7 @@ from app.db.session import SessionLocal
 from app.db.types import utcnow
 from app.schemas.auth import NewPassword
 from app.services import audit, maintenance, matching
-from app.services.auth import normalise_email
+from app.services.auth import email_domain_allowed, normalise_email
 
 _password_adapter = TypeAdapter(NewPassword)
 
@@ -31,7 +31,7 @@ def create_admin(db: Session, email: str, name: str, password: str) -> User:
     email = normalise_email(email)
     if not name.strip():
         raise SystemExit("Name is required.")
-    if email.rsplit("@", 1)[-1] not in get_settings().allowed_email_domains:
+    if not email_domain_allowed(email, get_settings()):
         raise SystemExit("Email domain is not in ALLOWED_EMAIL_DOMAINS.")
     if db.scalar(select(User).where(User.email == email)) is not None:
         raise SystemExit("A user with this email already exists. Use set-role instead.")

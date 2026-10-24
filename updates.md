@@ -2,16 +2,27 @@
 
 ## Current status
 
-- **Phases 2 to 8 complete for the backend.** It provides authentication, reports and search, images, matching, claims, the QR handover, dashboards and administration, and has passed a security review and a clean-setup check.
-- **UI:** deferred by the owner, who will add it later. Phase 1 (UI) was skipped on purpose; `frontend/` is still the original stub.
-- **Tests:** 198 passing (`python -m pytest` in `backend/`), and migrations match the models.
+- **Backend phases 2 to 8 complete:** authentication, reports and search, images, matching, claims, the QR handover, dashboards and administration, plus a security review and a clean-setup check.
+- **Basic UI built** (owner asked for a minimal UI matching their reference screenshot): Angular 21 in `frontend/`, connected to the real API for every screen.
+- **SRM only:** `ALLOWED_EMAIL_DOMAINS=srmist.edu.in`. Users store SRM ID, department and optional phone.
+- **Tests:** backend 214 passing, frontend 3 passing (`npm test` from the root runs both); migrations match the models.
 - Last updated: 2026-10-24.
 
 ## Persistent decisions
 
 General
 - Fixed stack: Angular + FastAPI + SQLite/SQLAlchemy 2.x + Alembic + Pytest. Do not change.
-- Backend first; frontend is untouched until the owner asks for UI work.
+- Frontend: Angular 21 (Angular 22 needs Node 24.15+, the dev machine has 24.14.1), standalone components with inline templates, signals, OnPush, one global `src/styles.css` with tokens. No UI library. The owner's reference screenshot sets the look: white, navy primary, brown-orange for lost, green for found.
+- Allowed email domain is enforced at registration, at login and on every request (`resolve_session`), so narrowing `ALLOWED_EMAIL_DOMAINS` also locks out existing accounts and live sessions. The frontend reads the domains from `/api/auth/session` for hints and an early check.
+- `users.campus_id` (SRM register number or employee ID) is unique and stored uppercase; email and SRM ID cannot be changed by users. Staff see the claimant's SRM ID (never the phone) at handover.
+- On Windows, `npm run backend` restarts uvicorn itself (file watcher plus `taskkill /T`) instead of using `--reload`. Uvicorn's Windows reload sends `CTRL_C_EVENT`, which reaches every process in the console and kills npm. Also, `backend\.venv\Scripts\python.exe` is a launcher with the real interpreter as a child, so restarts must kill the whole tree.
+- 21st.dev / shadcn (React + Tailwind) components are ported to Angular, never installed: the dropdown menu became `shared/account-menu.ts` on Angular CDK Menu, the beams background became `shared/beams-background.ts`. No React, Tailwind, `components/ui` folder or `cn()` utility exists or should be added.
+- Action results use the alert stack (`Alerts` service); inline alerts remain only for page-load failures and form validation.
+- In the Claude preview pane the page reports `visibilityState: hidden`, so requestAnimationFrame runs about twice a second: animations look slow and zoneless re-renders lag there. Judge motion in a normal browser window.
+- Run everything from the repo root with `npm run setup|backend|frontend|test|cli` (root `package.json` + `scripts/dev.mjs`, which finds `backend/.venv` itself). Angular CLI analytics is disabled in `frontend/angular.json` so `ng serve` never blocks on a first-run prompt.
+- The frontend calls the API same-origin (`/api`) through `proxy.conf.json` in dev and the reverse proxy in production. Never point it at another origin, or cookies and CSRF break.
+- `GET /api/auth/session` (returns `{user: null}`) is used at startup instead of `/me` so anonymous page loads produce no 401 console errors. `GET /api/public-stats` feeds the home page counts (aggregates only).
+- Sign-in pages (`/items`, `/items/:id`, `/report`, dashboards) are `noindex`; the sitemap lists only `/`, `/login`, `/register` and `/privacy`, generated from `SITE_URL` at build time.
 - Do not read other chat sessions; use this file for continuity.
 - Services raise `ServiceError(status, detail)`; `app/main.py` renders it as `{"detail": ...}`. Each service function is one transaction.
 - Status transitions call `concurrency.lock_status` before writing (a same-value UPDATE that re-checks status and takes SQLite's write lock), so concurrent requests get `409` rather than overwriting each other.
@@ -45,7 +56,7 @@ Domain
 
 ### UI and site norms (owner requirements, apply when the frontend is built)
 
-Avoid: purple gradients, pill-shaped buttons, fake reviews, fake metrics or customer counters, vague hero text, emoji icons, em dashes in copy, any "Vite" or "React" mentions, default or placeholder content, cursor animations, AI-generated stock photos, "made by AI" tags.
+Avoid: purple gradients, pill-shaped buttons, fake reviews, fake metrics or customer counters, vague hero text, emoji icons, em dashes in copy, any "Vite" or "React" mentions, default or placeholder content, AI-generated stock photos, "made by AI" tags. (Cursor animation was on this list "at this stage"; the owner asked for one on 2026-10-24, so it now exists, decorative and off for touch and reduced motion.)
 
 Include: site favicon, privacy policy page, custom 404 page, accurate page titles and meta descriptions, canonical tags, exactly one `h1` per page, `sitemap.xml`, internal links, breadcrumbs, structured data (JSON-LD), meaningful alt text, zero console errors, no production source maps (`sourceMap: false` in the Angular production config).
 
@@ -69,12 +80,34 @@ Design direction from the master prompt: midnight navy, electric lime, cool off-
   - New tests: `test_security.py` (the route matrix checks every one of the 53 routes for session, CSRF and role, plus headers, body limit, production docs, error leakage, login lockout, timing parity, email failure and the race guard) and `test_transitions.py` (invalid transitions on CLAIMED, rejected and RETURNED states).
   - README gained Security and Deployment sections; the API contract documents headers, limits and every error status.
   - No schema changes.
+- **Basic UI:**
+  - Pages: home, browse with filters, item detail (private claim form, match suggestions for the reporter, add photos, close), report form with photos, dashboard (claims with handover QR code, suggestions, recent reports, notifications, change password), staff desk (review, schedule, QR verify, complete only after an ID checkbox, cancel), admin (stats, users, categories and places, recent activity), log in, register, confirm email, forgot and reset password, privacy policy, 404.
+  - Site norms applied: SVG favicon, privacy policy, custom 404, per-page titles and meta descriptions, canonical links, one `h1` per page, sitemap and robots, breadcrumbs with BreadcrumbList JSON-LD, WebSite JSON-LD with SearchAction on the home page, alt text on every image, no production source maps, no emoji, no pill buttons, no gradients, no invented numbers (the home counts come from the API and the panel hides if the API fails).
+  - If a report saves but a photo upload fails, the user lands on the saved report with a note listing the failed photos, so they don't resubmit and create duplicates.
+  - Backend additions: `/api/auth/session`, `/api/public-stats`, with tests (route inventory now 55).
+
+- **SRM restriction and profile (latest):**
+  - Backend: domain check on login and on every request; `campus_id`, `department` and `phone` on `users` (migration `656d005407df`, with a hand-added uppercase CHECK); sign-up validation and normalisation; `PATCH /api/auth/me`; `/api/auth/session` returns `allowed_email_domains`; claimant SRM ID for staff. Route inventory is 56.
+  - Frontend: SRM email hints and checks, SRM ID, department and phone fields on sign-up, a "My details" section on the dashboard, SRM ID in the staff desk and admin user table, privacy policy updated. New favicon: a magnifier over a lost-property box.
+  - Fixed: `npm run backend` died on the first backend file change on Windows (see decisions).
+
+- **UI effects (latest):** dismissible alert stack with live notifications, account dropdown menu (ported 21st.dev / shadcn design on Angular CDK Menu), beams background on the home hero (ported 21st.dev "Beams Background", source fetched via the 21st.dev tools), cursor ring. Frontend tests now cover the menu (roles, staff and admin items) and the alert stack. Dependency added: `@angular/cdk`.
 
 ## Commands run (latest, 2026-10-24)
 
 | Command | Result |
 |---|---|
-| `python -m pytest` (project venv) | 198 passed |
+| Frontend after UI effects: `ng test`, `ng build`, `npm audit --omit=dev` | 6 passed; clean build, 0 source maps; 0 vulnerabilities |
+| Browser: beams, menu, alerts, cursor | Beams canvas animating (pixels change between samples); menu keyboard navigation, Escape and focus return work; success alert and notification alert shown, "Mark as read" cleared it on the server; cursor ring follows the pointer. No console errors. Test account deleted. |
+| `python -m pytest` (after SRM and profile changes) | 214 passed |
+| `alembic upgrade head` + `alembic check` | Applied `656d005407df`; no drift |
+| Windows dev-runner check: two forced backend restarts by touching files, then Ctrl+C | Server answered after each restart, terminal kept running, port 8000 freed on Ctrl+C |
+| Browser: Gmail sign-up refused; `@srmist.edu.in` sign-up, verify, log in, edit department on dashboard | Refusal message shown; details stored and normalised (SRM ID uppercased, phone digits only); edit saved; no console errors. Test account deleted. |
+| `python -m pytest` (project venv, after UI work) | 200 passed |
+| `npx ng build` (frontend) | Clean, no warnings, 0 `.map` files in `dist` |
+| `npx ng test --watch=false` (frontend) | 3 passed |
+| Browser walkthrough (backend + `ng serve` in the preview pane): register, open verification link from dev log, log in with return URL, file a FOUND report, home, browse search, dashboard, staff desk, admin, privacy, 404 | All rendered with real data; head tags checked (one `h1`, canonical, JSON-LD, no images without alt); no console errors. Test account and its data deleted afterwards. |
+| `python -m pytest` (project venv, Phase 8) | 198 passed |
 | `alembic check` | No new upgrade operations detected |
 | `pip-audit -r requirements-dev.txt` (separate scratch venv) | No known vulnerabilities found |
 | Clean copy of `backend/` (no venv, data, `.env` or uploads): new venv, `pip install -r requirements-dev.txt`, `cp .env.example .env`, `alembic upgrade head`, `python -m app.db.seed`, `python -m pytest`, `uvicorn` | Both migrations applied, 10 + 9 seeded, 198 passed, health 200 with `foreign_keys: on`, security headers present, no server errors |
@@ -83,8 +116,9 @@ Earlier phases each recorded: tests passing at the time (18, 46, 78, 109, 130, 1
 
 ## Known issues and limitations
 
-- `frontend/` is a stub (empty `angular.json` projects, `@angular/core ^16` only, three one-line placeholder `.ts` files). Regenerate with the current Angular CLI when UI work starts and delete the placeholders.
-- Not a git repository yet.
+- Staff verify QR codes by scanning with a keyboard-style scanner or pasting the text; there is no in-browser camera scanner yet.
+- Frontend tests cover the app shell only; page flows were checked by hand in the browser, not by automated end-to-end tests.
+- Photo upload through the browser UI was not exercised in the walkthrough (the browser tool cannot pick files); the upload API itself is covered by backend tests.
 - Single process only: the rate limiter is in memory and SQLite allows one writer. Behind a proxy, start uvicorn with `--proxy-headers --forwarded-allow-ips` so the client IP is correct.
 - The SMTP backend is implemented but not tested against a real mail server.
 - Search uses SQLite `LIKE` (case-insensitive for ASCII only); FTS5 if volume grows. Matching scans up to 500 candidates in the request; location matching is exact only.
@@ -96,8 +130,8 @@ Earlier phases each recorded: tests passing at the time (18, 46, 78, 109, 130, 1
 
 ## Next tasks
 
-1. Frontend: regenerate the Angular project (current CLI) with a dev proxy for `/api`, and build the UI against `docs/api-contract.md`, following the UI and site norms above.
-2. Frontend: Angular tests for auth flow, report form validation and the QR scan screen (camera access via a maintained Angular-compatible scanner).
-3. Initialise git and make a first commit (`.gitignore` is ready).
-4. Before going live: test SMTP against the campus mail server, and set up scheduled cleanup and off-machine backups.
+1. Add an in-browser camera QR scanner to the staff desk (a maintained library that works with Angular, loaded only on that page).
+2. Frontend tests for the report form, claim form and staff complete flow; consider Playwright end-to-end tests for the full claim-to-return journey.
+3. Before going live: test SMTP against the campus mail server, set `SITE_URL` at build, schedule cleanup and off-machine backups.
+4. Optional: edit-report form (the API supports PATCH; the UI currently offers add photo and close only).
 5. Optional: add `verified_by_id`/`completed_by_id` to `handover_records` if staff reporting needs them.

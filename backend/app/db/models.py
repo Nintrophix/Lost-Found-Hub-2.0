@@ -63,12 +63,18 @@ class User(TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("email = lower(email)", name="email_lowercase"),
         CheckConstraint("length(trim(name)) > 0", name="name_not_blank"),
+        CheckConstraint("campus_id = upper(campus_id)", name="campus_id_uppercase"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     email: Mapped[str] = mapped_column(String(254), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # SRM register number (students) or employee ID (staff). Required at sign-up; nullable for
+    # accounts created before these fields existed and for CLI-created admins.
+    campus_id: Mapped[str | None] = mapped_column(String(20), unique=True)
+    department: Mapped[str | None] = mapped_column(String(100))
+    phone: Mapped[str | None] = mapped_column(String(20))
     role: Mapped[UserRole] = mapped_column(
         enum_column(UserRole, "user_role"), nullable=False, default=UserRole.USER, server_default=UserRole.USER.value
     )

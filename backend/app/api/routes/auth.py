@@ -2,12 +2,13 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 
 from app.api.deps import (
     AppSettings,
     CurrentSession,
     CurrentUser,
+    SESSION_COOKIE,
     DbSession,
     clear_session_cookies,
     set_session_cookies,
@@ -19,7 +20,9 @@ from app.schemas.auth import (
     LoginRequest,
     MessageResponse,
     RegisterRequest,
+    ProfileUpdate,
     ResetPasswordRequest,
+    SessionResponse,
     TokenRequest,
     UserResponse,
 )
@@ -46,7 +49,8 @@ CHECK_INBOX = "If this address can receive one, we have sent an email with the n
     dependencies=[Depends(rate_limit("register", 10, 3600))],
 )
 def register(body: RegisterRequest, db: DbSession, settings: AppSettings, sender: Sender) -> MessageResponse:
-    auth_service.register(db, sender, settings, body.name, body.email, body.password)
+    auth_service.register(db, sender, settings, body.name, body.email, body.password, body.campus_id,
+                          body.department, body.phone)
     return MessageResponse(message=CHECK_INBOX)
 
 
@@ -79,9 +83,27 @@ def logout(session: CurrentSession, response: Response, db: DbSession, settings:
     clear_session_cookies(response, settings)
 
 
+@router.get("/session")
+def current_session(request: Request, db: DbSession, settings: AppSettings) -> SessionResponse:
+    """Like /me, but returns {"user": null} instead of 401 so anonymous page loads stay error-free."""
+    raw = request.cookies.get(SESSION_COOKIE)
+    session = auth_service.resolve_session(db, raw) if raw else None
+    return SessionResponse(
+        user=UserResponse.model_validate(session.user) if session else None,
+        allowed_email_domains=settings.allowed_email_domains,
+    )
+
+
 @router.get("/me")
 def me(user: CurrentUser) -> UserResponse:
     return UserResponse.model_validate(user)
+
+
+@router.patch("/me")
+def update_me(body: ProfileUpdate, user: CurrentUser, db: DbSession) -> UserResponse:
+    # Required fields ignore an explicit null; phone is optional, so null clears it.
+    changes = {k: v for k, v in body.model_dump(exclude_unset=True).items() if v is not None or k == "phone"}
+    return UserResponse.model_validate(auth_service.update_profile(db, user, changes))
 
 
 @router.post(

@@ -26,6 +26,8 @@ PUBLIC = {
     ("GET", "/api/health"),
     ("GET", "/api/categories"),
     ("GET", "/api/locations"),
+    ("GET", "/api/public-stats"),
+    ("GET", "/api/auth/session"),
     ("POST", "/api/auth/register"),
     ("POST", "/api/auth/verify-email"),
     ("POST", "/api/auth/resend-verification"),
@@ -54,7 +56,7 @@ PROTECTED = [r for r in all_routes() if r not in PUBLIC]
 
 def test_route_inventory_is_complete():
     # Fails when a route is added, so its protection is a deliberate decision recorded here.
-    assert len(all_routes()) == 53
+    assert len(all_routes()) == 56
     assert PUBLIC <= set(all_routes())
 
 
@@ -157,7 +159,8 @@ def test_duplicate_registration_spends_the_same_hashing_work(api, client, monkey
     calls = []
     real = auth_service.hash_password
     monkeypatch.setattr(auth_service, "hash_password", lambda p: calls.append(p) or real(p))
-    body = {"name": "Someone", "email": "user1@example.edu", "password": "some other password"}
+    body = {"name": "Someone", "email": "user1@example.edu", "password": "some other password",
+            "campus_id": "RA2111003010999", "department": "Physics"}
     assert client.post("/api/auth/register", json=body).status_code == 202
     assert len(calls) == 1
 
@@ -167,7 +170,8 @@ def test_email_delivery_failure_does_not_break_the_request(api, client, outbox, 
         raise OSError("SMTP down")
 
     monkeypatch.setattr(outbox, "send", broken)
-    body = {"name": "New Person", "email": "new@example.edu", "password": "correct horse battery"}
+    body = {"name": "New Person", "email": "new@example.edu", "password": "correct horse battery",
+            "campus_id": "RA2111003010998", "department": "Physics"}
     assert client.post("/api/auth/register", json=body).status_code == 202
     assert "Failed to deliver email" in caplog.text
 

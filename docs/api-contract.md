@@ -40,7 +40,9 @@ Only implemented endpoints are listed. Add each endpoint here when it ships.
 `UserResponse`
 ```json
 { "id": 1, "name": "Alex Doe", "email": "alex@example.edu", "role": "USER",
-  "email_verified": true, "account_status": "ACTIVE", "created_at": "2026-10-24T05:30:38.214450Z" }
+  "email_verified": true, "account_status": "ACTIVE", "campus_id": "RA2111003010123",
+  "department": "Computer Science and Engineering", "phone": "+919876543210",
+  "created_at": "2026-10-24T05:30:38.214450Z" }
 ```
 
 `MessageResponse`: `{ "message": "..." }`
@@ -56,18 +58,22 @@ Auth: none. `200 { "status": "ok", "database": "ok", "foreign_keys": "on" }`.
 
 | Method and path | Auth | Body | Success |
 |---|---|---|---|
-| `POST /register` | none | `{ name, email, password }` | `202 MessageResponse` |
+| `POST /register` | none | `{ name, email, password, campus_id, department, phone? }` | `202 MessageResponse` |
 | `POST /verify-email` | none | `{ token }` | `200 MessageResponse` |
 | `POST /resend-verification` | none | `{ email }` | `202 MessageResponse` |
 | `POST /login` | none | `{ email, password }` | `200 UserResponse` + cookies |
 | `POST /logout` | session + CSRF | none | `204`, cookies cleared |
 | `GET /me` | session | none | `200 UserResponse` |
+| `GET /session` | none | none | `200 { "user": UserResponse \| null, "allowed_email_domains": ["srmist.edu.in"] }` (never 401, so anonymous page loads log no errors) |
+| `PATCH /me` | session + CSRF | `{ name?, department?, phone? }` | `200 UserResponse` |
 | `POST /password/forgot` | none | `{ email }` | `202 MessageResponse` |
 | `POST /password/reset` | none | `{ token, new_password }` | `200 MessageResponse` |
 | `POST /password/change` | session + CSRF | `{ current_password, new_password }` | `200 MessageResponse` |
 
 Behaviour notes:
-- **register:** email domain must be in `ALLOWED_EMAIL_DOMAINS` (exact match), else `422`. The response is identical whether or not the email already exists. A new account gets a verification email; an existing unverified account gets a fresh verification email; a verified account gets an "account already exists" notice. Existing accounts are never modified.
+- **Allowed domain:** only addresses in `ALLOWED_EMAIL_DOMAINS` (set to `srmist.edu.in`; exact match, subdomains are not accepted) can register (`422`) or log in (`403`), and a live session stops working (`401`) if its email is no longer allowed. The message names the allowed domain(s).
+- **Profile fields:** `campus_id` is the SRM register number or employee ID: spaces are removed, it is uppercased, and it must be 5 to 20 letters or digits. It is unique: a second account with the same ID gets `409`. `department` is 2 to 100 characters. `phone` is optional: spaces, dashes, dots and brackets are removed, then it must be 7 to 15 digits with an optional leading `+`. On `PATCH /me`, `null` clears `phone` and is ignored for `name` and `department`; `email` and `campus_id` cannot be changed (`422`). Profile changes are audit-logged by field name only, never values.
+- **register:** email domain must be in `ALLOWED_EMAIL_DOMAINS`, else `422`. The response is identical whether or not the email already exists. A new account gets a verification email; an existing unverified account gets a fresh verification email; a verified account gets an "account already exists" notice. Existing accounts are never modified.
 - **Email links** point to `FRONTEND_BASE_URL/verify-email#token=...` and `/reset-password#token=...`. The token is in the URL fragment so it is not sent to servers or logged. The frontend posts it to the matching endpoint.
 - **verify-email / password/reset:** tokens are single use. Verification tokens last `EMAIL_VERIFICATION_TTL_HOURS`, reset tokens `PASSWORD_RESET_TTL_MINUTES`. Issuing a new token invalidates earlier unused ones. Failure: `400 "This link is invalid or has expired."`
 - **login:** unknown email and wrong password both return `401 "Incorrect email or password."` Account status and verification (`403`) are only reported after the correct password. A new session is created on every login.
@@ -100,6 +106,10 @@ Duplicate name: `409`. Unknown id: `404`. Deactivating hides a row from new repo
 | `GET /api/locations` | none | `200 [ReferenceResponse]`, active only, sorted by name |
 
 `ReferenceResponse`: `{ "id": 5, "name": "Clothing", "description": "...", "is_active": true }`
+
+### `GET /api/public-stats`
+Auth: none. Aggregate counts for the home page only, never item details:
+`{ "open_lost_reports": 9, "found_items_waiting": 9, "items_returned": 1 }` (open means `OPEN` or `MATCHED`; returned counts `FOUND` reports that are `RETURNED`).
 
 ## Items (`/api/items`)
 
@@ -248,7 +258,7 @@ Auth: session + CSRF for writes, role `STAFF` or `ADMIN`. Staff cannot review, s
 | `POST /api/staff/handovers/{id}/complete` | `{ identity_confirmed: true, notes? }` | `200 HandoverResponse` |
 | `POST /api/staff/handovers/{id}/cancel` | `{ reason }` | `200 HandoverResponse` |
 
-`HandoverResponse` is the handover summary plus `claim_id`, `item_id`, `item_title`, `staff_id` (who scheduled it), `notes` and `claimant: { id, name, email }`, so staff can check the claimant's campus ID at the desk.
+`HandoverResponse` is the handover summary plus `claim_id`, `item_id`, `item_title`, `staff_id` (who scheduled it), `notes` and `claimant: { id, name, email, campus_id }`, so staff can check the claimant's SRM ID card at the desk. Staff never see phone numbers.
 
 - **Approve:** `PENDING` only. Item moves to `CLAIMED`. `409` if another claim on the item is already approved (also enforced by a database index). Other pending claims stay pending until the handover completes.
 - **Reject:** from `PENDING` or `APPROVED`. Rejecting an approved claim cancels its live handover and releases the item, as for withdraw.
