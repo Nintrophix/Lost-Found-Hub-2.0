@@ -168,6 +168,7 @@ def admin_stats(db: Session, created_from: datetime | None, created_to: datetime
             "total": db.scalar(select(func.count(User.id))) or 0,
             "by_role": _counts(db, User.role, UserRole),
             "by_status": _counts(db, User.account_status, AccountStatus),
+            "verified": db.scalar(select(func.count(User.id)).where(User.email_verified_at.is_not(None))) or 0,
         },
         "reports": _report_counts(db, *in_range),
         "claims": _counts(db, Claim.status, ClaimStatus, *created_between(Claim.created_at)),

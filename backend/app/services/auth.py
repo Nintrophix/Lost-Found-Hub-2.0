@@ -1,4 +1,4 @@
-"""Authentication business logic: registration, sessions and passwords.
+"""Authentication business logic: registration, verification, sessions and passwords.
 
 Each public function is one transaction: it commits on success and leaves rollback to the caller
 (the request-scoped session is closed, discarding uncommitted work) on error.
@@ -22,7 +22,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.enums import AccountStatus, UserRole
-from app.db.models import PasswordResetToken, User, UserSession
+from app.db.models import EmailVerificationToken, PasswordResetToken, User, UserSession
 from app.db.types import utcnow
 from app.services import audit
 from app.services.email import EmailSender, OutgoingEmail
@@ -30,10 +30,12 @@ from app.services.errors import ServiceError
 
 INVALID_CREDENTIALS = "Incorrect email or password."
 INVALID_LINK = "This link is invalid or has expired."
-EMAIL_TAKEN = "An account with this email already exists. Sign in, or reset your password if you have forgotten it."
 LAST_SEEN_RESOLUTION = timedelta(minutes=5)
 LOGIN_FAILURE_LIMIT = 10
 LOGIN_FAILURE_WINDOW = 900  # seconds
+
+UserToken = type[EmailVerificationToken] | type[PasswordResetToken]
+
 
 @dataclass(frozen=True)
 class IssuedSession:
@@ -60,7 +62,7 @@ def _user_by_email(db: Session, email: str) -> User | None:
     return db.scalar(select(User).where(User.email == email))
 
 
-def _issue_user_token(db: Session, model: type[PasswordResetToken], user: User, ttl: timedelta) -> str:
+def _issue_user_token(db: Session, model: UserToken, user: User, ttl: timedelta) -> str:
     """Create a single-use token, replacing any unconsumed token of the same kind."""
     db.execute(delete(model).where(model.user_id == user.id, model.consumed_at.is_(None)))
     raw = generate_token()
@@ -68,7 +70,7 @@ def _issue_user_token(db: Session, model: type[PasswordResetToken], user: User, 
     return raw
 
 
-def _consume_user_token(db: Session, model: type[PasswordResetToken], raw: str) -> User:
+def _consume_user_token(db: Session, model: UserToken, raw: str) -> User:
     token = db.scalar(select(model).where(model.token_hash == hash_token(raw)))
     if token is None or token.consumed_at is not None or token.expires_at <= utcnow():
         raise ServiceError(400, INVALID_LINK)
@@ -83,6 +85,23 @@ def _revoke_sessions(db: Session, user_id: int, keep_session_id: int | None = No
     if keep_session_id is not None:
         stmt = stmt.where(UserSession.id != keep_session_id)
     db.execute(stmt.values(revoked_at=utcnow()))
+
+
+def _send_verification(db: Session, sender: EmailSender, settings: Settings, user: User) -> None:
+    raw = _issue_user_token(db, EmailVerificationToken, user, timedelta(hours=settings.email_verification_ttl_hours))
+    link = f"{settings.frontend_base_url}/verify-email#token={raw}"
+    sender.send(
+        OutgoingEmail(
+            to=user.email,
+            subject="Confirm your campus email address",
+            body=(
+                f"Hello {user.name},\n\nConfirm your email address to activate your account:\n{link}\n\n"
+                f"This link expires in {settings.email_verification_ttl_hours} hours. If you did not create this "
+                "account, or did not choose its password, you can set a new password with the forgot password "
+                "option on the sign-in page."
+            ),
+        )
+    )
 
 
 def _send_password_reset(db: Session, sender: EmailSender, settings: Settings, user: User) -> None:
@@ -101,22 +120,23 @@ def _send_password_reset(db: Session, sender: EmailSender, settings: Settings, u
     )
 
 
-def _issue_session(db: Session, settings: Settings, user: User) -> IssuedSession:
-    session_token, csrf_token = generate_token(), generate_token()
-    expires_at = utcnow() + timedelta(hours=settings.session_ttl_hours)
-    db.add(
-        UserSession(
-            user_id=user.id,
-            token_hash=hash_token(session_token),
-            csrf_token_hash=hash_token(csrf_token),
-            expires_at=expires_at,
+def _send_account_exists(sender: EmailSender, settings: Settings, user: User) -> None:
+    sender.send(
+        OutgoingEmail(
+            to=user.email,
+            subject="You already have an account",
+            body=(
+                f"Hello {user.name},\n\nSomeone tried to register with this email address, but an account already "
+                f"exists. Sign in at {settings.frontend_base_url}/login, or reset your password there if you have "
+                "forgotten it. If this was not you, no action is needed."
+            ),
         )
     )
-    return IssuedSession(user=user, session_token=session_token, csrf_token=csrf_token, expires_at=expires_at)
 
 
 def register(
     db: Session,
+    sender: EmailSender,
     settings: Settings,
     name: str,
     email: str,
@@ -124,31 +144,64 @@ def register(
     campus_id: str,
     department: str,
     phone: str | None,
-) -> IssuedSession:
-    """Create a USER account and sign it in. There is no email confirmation step."""
+) -> None:
+    """Create a USER account. Responds identically whether or not the email is already registered."""
     email = normalise_email(email)
     if not email_domain_allowed(email, settings):
         raise ServiceError(422, domain_error(settings))
-    if _user_by_email(db, email) is not None:
-        raise ServiceError(409, EMAIL_TAKEN)
-    if db.scalar(select(User.id).where(User.campus_id == campus_id)) is not None:
-        raise ServiceError(
-            409, "This SRM ID is already linked to an account. If it is yours, reset that account's password."
-        )
-    user = User(name=name, email=email, password_hash=hash_password(password), role=UserRole.USER,
-                campus_id=campus_id, department=department, phone=phone)
-    db.add(user)
-    try:
-        db.flush()
-    except IntegrityError:
-        # A concurrent registration claimed the email or SRM ID first.
-        db.rollback()
-        raise ServiceError(409, EMAIL_TAKEN) from None
-    audit.record(db, "auth.registered", "user", user.id, actor_id=user.id)
-    issued = _issue_session(db, settings, user)
-    audit.record(db, "auth.login", "user", user.id, actor_id=user.id)
+
+    existing = _user_by_email(db, email)
+    if existing is None:
+        taken = db.scalar(select(User.id).where(User.campus_id == campus_id))
+        if taken is not None:
+            raise ServiceError(
+                409, "This SRM ID is already linked to an account. If it is yours, reset that account's password."
+            )
+        user = User(name=name, email=email, password_hash=hash_password(password), role=UserRole.USER,
+                    campus_id=campus_id, department=department, phone=phone)
+        db.add(user)
+        try:
+            db.flush()
+        except IntegrityError:
+            # Concurrent registration for the same email: fall through to the existing-account path.
+            db.rollback()
+            existing = _user_by_email(db, email)
+        else:
+            _send_verification(db, sender, settings, user)
+            audit.record(db, "auth.registered", "user", user.id, actor_id=user.id)
+            db.commit()
+            return
+
+    if existing is not None:
+        # Same hashing cost as a new registration, so response time does not reveal the account exists.
+        hash_password(password)
+    if existing is not None and allow_for_key("register", email, 3, 3600):
+        if existing.email_verified_at is None:
+            _send_verification(db, sender, settings, existing)
+        else:
+            _send_account_exists(sender, settings, existing)
+        db.commit()
+
+
+def verify_email(db: Session, raw_token: str) -> None:
+    user = _consume_user_token(db, EmailVerificationToken, raw_token)
+    if user.email_verified_at is None:
+        user.email_verified_at = utcnow()
+    audit.record(db, "auth.email_verified", "user", user.id, actor_id=user.id)
     db.commit()
-    return issued
+
+
+def resend_verification(db: Session, sender: EmailSender, settings: Settings, email: str) -> None:
+    email = normalise_email(email)
+    user = _user_by_email(db, email)
+    if (
+        user is not None
+        and user.email_verified_at is None
+        and user.account_status == AccountStatus.ACTIVE
+        and allow_for_key("resend-verification", email, 3, 3600)
+    ):
+        _send_verification(db, sender, settings, user)
+        db.commit()
 
 
 def login(db: Session, settings: Settings, email: str, password: str) -> IssuedSession:
@@ -173,14 +226,25 @@ def login(db: Session, settings: Settings, email: str, password: str) -> IssuedS
         raise ServiceError(403, domain_error(settings))
     if user.account_status != AccountStatus.ACTIVE:
         raise ServiceError(403, "This account is not active. Contact campus support.")
+    if user.email_verified_at is None:
+        raise ServiceError(403, "Confirm your email address before signing in.")
 
     if password_needs_rehash(user.password_hash):
         user.password_hash = hash_password(password)
 
-    issued = _issue_session(db, settings, user)
+    session_token, csrf_token = generate_token(), generate_token()
+    expires_at = utcnow() + timedelta(hours=settings.session_ttl_hours)
+    db.add(
+        UserSession(
+            user_id=user.id,
+            token_hash=hash_token(session_token),
+            csrf_token_hash=hash_token(csrf_token),
+            expires_at=expires_at,
+        )
+    )
     audit.record(db, "auth.login", "user", user.id, actor_id=user.id)
     db.commit()
-    return issued
+    return IssuedSession(user=user, session_token=session_token, csrf_token=csrf_token, expires_at=expires_at)
 
 
 def resolve_session(db: Session, raw_token: str) -> UserSession | None:
@@ -190,7 +254,7 @@ def resolve_session(db: Session, raw_token: str) -> UserSession | None:
     if session is None or session.revoked_at is not None or session.expires_at <= now:
         return None
     user = session.user
-    if user.account_status != AccountStatus.ACTIVE:
+    if user.account_status != AccountStatus.ACTIVE or user.email_verified_at is None:
         return None
     # Checked on every request, so narrowing ALLOWED_EMAIL_DOMAINS takes effect for live sessions too.
     if not email_domain_allowed(user.email, get_settings()):
@@ -222,6 +286,9 @@ def forgot_password(db: Session, sender: EmailSender, settings: Settings, email:
 def reset_password(db: Session, raw_token: str, new_password: str) -> None:
     user = _consume_user_token(db, PasswordResetToken, raw_token)
     user.password_hash = hash_password(new_password)
+    # Receiving the reset email proves ownership of the address.
+    if user.email_verified_at is None:
+        user.email_verified_at = utcnow()
     db.execute(
         delete(PasswordResetToken).where(
             PasswordResetToken.user_id == user.id, PasswordResetToken.consumed_at.is_(None)

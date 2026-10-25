@@ -78,6 +78,7 @@ class User(TimestampMixin, Base):
     role: Mapped[UserRole] = mapped_column(
         enum_column(UserRole, "user_role"), nullable=False, default=UserRole.USER, server_default=UserRole.USER.value
     )
+    email_verified_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     account_status: Mapped[AccountStatus] = mapped_column(
         enum_column(AccountStatus, "account_status"),
         nullable=False,
@@ -89,6 +90,10 @@ class User(TimestampMixin, Base):
     notifications: Mapped[list["Notification"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
+
+    @property
+    def is_email_verified(self) -> bool:
+        return self.email_verified_at is not None
 
 
 class Category(Base):
@@ -337,6 +342,10 @@ class _UserTokenMixin(CreatedAtMixin):
     token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
     expires_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
     consumed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class EmailVerificationToken(_UserTokenMixin, Base):
+    __tablename__ = "email_verification_tokens"
 
 
 class PasswordResetToken(_UserTokenMixin, Base):

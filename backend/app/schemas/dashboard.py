@@ -60,6 +60,7 @@ class UserStats(BaseModel):
     total: int
     by_role: StatusCounts
     by_status: StatusCounts
+    verified: int
 
 
 class AdminStats(BaseModel):

@@ -77,47 +77,53 @@ export class LoginPage {
       <app-breadcrumbs [crumbs]="[{ label: 'Home', link: '/' }, { label: 'Create an account' }]" />
       <div class="form-card">
         <h1>Create an account</h1>
-        <p class="muted">Only {{ auth.domainHint() }} addresses can register.</p>
-        @if (error()) { <div class="alert alert-error" role="alert">{{ error() }}</div> }
-        <form (ngSubmit)="submit()">
-          <div class="field">
-            <label for="name">Full name</label>
-            <input id="name" name="name" autocomplete="name" required [(ngModel)]="name" />
-          </div>
-          <div class="field">
-            <label for="email">SRM email</label>
-            <input id="email" name="email" type="email" autocomplete="email" required [(ngModel)]="email"
-                   [placeholder]="'yourname' + auth.domainHint()" />
-          </div>
-          <div class="field">
-            <label for="campus-id">SRM ID <span class="hint">(register number, or employee ID for staff)</span></label>
-            <input id="campus-id" name="campusId" required minlength="5" maxlength="20" autocapitalize="characters"
-                   [(ngModel)]="campusId" placeholder="For example: RA2111003010123" />
-          </div>
-          <div class="field">
-            <label for="department">Department</label>
-            <input id="department" name="department" required minlength="2" maxlength="100" autocomplete="organization-title"
-                   [(ngModel)]="department" placeholder="For example: Computer Science and Engineering" />
-          </div>
-          <div class="field">
-            <label for="phone">Phone <span class="hint">(optional, shown only to you and administrators)</span></label>
-            <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="20" [(ngModel)]="phone" />
-          </div>
-          <div class="field">
-            <label for="password">Password <span class="hint">(at least 8 characters)</span></label>
-            <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required [(ngModel)]="password" />
-          </div>
-          <button class="btn" type="submit" [disabled]="busy()">Create account</button>
-        </form>
-        <p class="small" style="margin-top: 16px">Already registered? <a routerLink="/login">Log in</a></p>
+        @if (done()) {
+          <div class="alert alert-ok" role="status">{{ done() }}</div>
+          <p>Open the link in the email to confirm your address, then <a routerLink="/login">log in</a>.</p>
+        } @else {
+          <p class="muted">Only {{ auth.domainHint() }} addresses can register. We send a link to confirm the address is yours.</p>
+          @if (error()) { <div class="alert alert-error" role="alert">{{ error() }}</div> }
+          <form (ngSubmit)="submit()">
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" name="name" autocomplete="name" required [(ngModel)]="name" />
+            </div>
+            <div class="field">
+              <label for="email">SRM email</label>
+              <input id="email" name="email" type="email" autocomplete="email" required [(ngModel)]="email"
+                     [placeholder]="'yourname' + auth.domainHint()" />
+            </div>
+            <div class="field">
+              <label for="campus-id">SRM ID <span class="hint">(register number, or employee ID for staff)</span></label>
+              <input id="campus-id" name="campusId" required minlength="5" maxlength="20" autocapitalize="characters"
+                     [(ngModel)]="campusId" placeholder="For example: RA2111003010123" />
+            </div>
+            <div class="field">
+              <label for="department">Department</label>
+              <input id="department" name="department" required minlength="2" maxlength="100" autocomplete="organization-title"
+                     [(ngModel)]="department" placeholder="For example: Computer Science and Engineering" />
+            </div>
+            <div class="field">
+              <label for="phone">Phone <span class="hint">(optional, shown only to you and administrators)</span></label>
+              <input id="phone" name="phone" type="tel" autocomplete="tel" maxlength="20" [(ngModel)]="phone" />
+            </div>
+            <div class="field">
+              <label for="password">Password <span class="hint">(at least 8 characters)</span></label>
+              <input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required [(ngModel)]="password" />
+            </div>
+            <button class="btn" type="submit" [disabled]="busy()">Create account</button>
+          </form>
+          <p class="small" style="margin-top: 16px">Already registered? <a routerLink="/login">Log in</a></p>
+        }
       </div>
     </div>
   `,
 })
 export class RegisterPage {
+  private readonly api = inject(Api);
   protected readonly auth = inject(Auth);
-  private readonly router = inject(Router);
   protected readonly error = signal('');
+  protected readonly done = signal('');
   protected readonly busy = signal(false);
   protected name = '';
   protected email = '';
@@ -133,7 +139,7 @@ export class RegisterPage {
     }
     this.busy.set(true);
     this.error.set('');
-    this.auth.register({
+    this.api.register({
       name: this.name,
       email: this.email,
       password: this.password,
@@ -141,8 +147,63 @@ export class RegisterPage {
       department: this.department,
       phone: this.phone.trim() || null,
     }).subscribe({
-      next: () => this.router.navigateByUrl('/dashboard'),
+      next: (r) => this.done.set(r.message),
       error: (e) => { this.error.set(errorMessage(e)); this.busy.set(false); },
+    });
+  }
+}
+
+@Component({
+  selector: 'app-verify-email',
+  imports: [FormsModule, RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <div class="container page form-card">
+      <h1>Confirm your email</h1>
+      @if (message()) {
+        <div class="alert alert-ok" role="status">{{ message() }}</div>
+        <a class="btn" routerLink="/login">Log in</a>
+      } @else if (error()) {
+        <div class="alert alert-error" role="alert">{{ error() }}</div>
+        <p>Request a new link:</p>
+        @if (resent()) {
+          <div class="alert alert-info" role="status">{{ resent() }}</div>
+        } @else {
+          <form class="search" (ngSubmit)="resend()">
+            <label class="sr-only" for="email">SRM email</label>
+            <input id="email" name="email" type="email" required [(ngModel)]="email" placeholder="Your SRM email" />
+            <button class="btn" type="submit">Send link</button>
+          </form>
+        }
+      } @else {
+        <p class="muted">Checking your link...</p>
+      }
+    </div>
+  `,
+})
+export class VerifyEmailPage {
+  private readonly api = inject(Api);
+  protected readonly message = signal('');
+  protected readonly error = signal('');
+  protected readonly resent = signal('');
+  protected email = '';
+
+  constructor() {
+    const token = tokenFromFragment(inject(ActivatedRoute));
+    if (!token) {
+      this.error.set('This link is invalid or has expired.');
+      return;
+    }
+    this.api.verifyEmail(token).subscribe({
+      next: (r) => this.message.set(r.message),
+      error: (e) => this.error.set(errorMessage(e)),
+    });
+  }
+
+  protected resend(): void {
+    this.api.resendVerification(this.email).subscribe({
+      next: (r) => this.resent.set(r.message),
+      error: (e) => this.error.set(errorMessage(e)),
     });
   }
 }

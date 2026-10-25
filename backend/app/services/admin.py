@@ -28,6 +28,7 @@ def list_users(
     q: str | None,
     role: UserRole | None,
     account_status: AccountStatus | None,
+    verified: bool | None,
     page: int,
     page_size: int,
 ) -> tuple[list[User], int]:
@@ -39,6 +40,8 @@ def list_users(
         conditions.append(User.role == role)
     if account_status:
         conditions.append(User.account_status == account_status)
+    if verified is not None:
+        conditions.append(User.email_verified_at.is_not(None) if verified else User.email_verified_at.is_(None))
     total = db.scalar(select(func.count(User.id)).where(*conditions)) or 0
     rows = db.scalars(
         select(User).where(*conditions).order_by(User.created_at.desc(), User.id.desc())

@@ -43,10 +43,11 @@ def list_users(
     q: Annotated[str | None, Query(max_length=100)] = None,
     role: UserRole | None = None,
     account_status: AccountStatus | None = None,
+    verified: bool | None = None,
     page: Page = 1,
     page_size: PageSize = 20,
 ) -> UserPage:
-    rows, total = admin_service.list_users(db, (q or "").strip() or None, role, account_status, page,
+    rows, total = admin_service.list_users(db, (q or "").strip() or None, role, account_status, verified, page,
                                            page_size)
     return UserPage(items=[UserResponse.model_validate(u) for u in rows], total=total, page=page,
                     page_size=page_size)

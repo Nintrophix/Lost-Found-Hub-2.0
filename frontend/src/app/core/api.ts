@@ -18,6 +18,7 @@ export interface User {
   name: string;
   email: string;
   role: Role;
+  email_verified: boolean;
   account_status: AccountStatus;
   campus_id: string | null;
   department: string | null;
@@ -194,7 +195,7 @@ export interface StaffDashboard {
 }
 
 export interface AdminStats {
-  users: { total: number; by_role: Counts; by_status: Counts };
+  users: { total: number; by_role: Counts; by_status: Counts; verified: number };
   reports: Record<ReportType, Counts>;
   claims: Counts;
   handovers: Counts;
@@ -261,7 +262,9 @@ export class Api {
   updateProfile(body: ProfileInput): Observable<User> { return this.http.patch<User>('/api/auth/me', body); }
   login(email: string, password: string): Observable<User> { return this.http.post<User>('/api/auth/login', { email, password }); }
   logout(): Observable<void> { return this.http.post<void>('/api/auth/logout', {}); }
-  register(body: RegisterInput): Observable<User> { return this.http.post<User>('/api/auth/register', body); }
+  register(body: RegisterInput) { return this.http.post<{ message: string }>('/api/auth/register', body); }
+  verifyEmail(token: string) { return this.http.post<{ message: string }>('/api/auth/verify-email', { token }); }
+  resendVerification(email: string) { return this.http.post<{ message: string }>('/api/auth/resend-verification', { email }); }
   forgotPassword(email: string) { return this.http.post<{ message: string }>('/api/auth/password/forgot', { email }); }
   changePassword(current_password: string, new_password: string) {
     return this.http.post<{ message: string }>('/api/auth/password/change', { current_password, new_password });

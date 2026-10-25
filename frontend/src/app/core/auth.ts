@@ -3,7 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { Observable, catchError, firstValueFrom, of, tap, throwError } from 'rxjs';
 
-import { Api, RegisterInput, Role, User } from './api';
+import { Api, Role, User } from './api';
 
 @Injectable({ providedIn: 'root' })
 export class Auth {
@@ -31,11 +31,6 @@ export class Auth {
 
   login(email: string, password: string): Observable<User> {
     return this.api.login(email, password).pipe(tap((user) => this.user.set(user)));
-  }
-
-  /** Creating an account signs it in straight away. */
-  register(body: RegisterInput): Observable<User> {
-    return this.api.register(body).pipe(tap((user) => this.user.set(user)));
   }
 
   logout(): Observable<unknown> {

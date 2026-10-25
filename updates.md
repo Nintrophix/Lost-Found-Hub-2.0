@@ -32,7 +32,7 @@ General
 - Services raise `ServiceError(status, detail)`; `app/main.py` renders it as `{"detail": ...}`. Each service function is one transaction.
 - Status transitions call `concurrency.lock_status` before writing (a same-value UPDATE that re-checks status and takes SQLite's write lock), so concurrent requests get `409` rather than overwriting each other.
 - Shared query builders are public (`items.item_query`, `matches.match_query`, `claims.claim_query`, `items.escape_like`); response builders live in `app/api/presenters.py`.
-- `tests/conftest.py` pins test settings through environment variables so `backend/.env` cannot change test behaviour. `tests/test_security.py` pins the route inventory (54 after removing the two email confirmation routes); update it deliberately when adding routes.
+- `tests/conftest.py` pins test settings through environment variables so `backend/.env` cannot change test behaviour. `tests/test_security.py` pins the route inventory (53); update it deliberately when adding routes.
 
 Data
 - Datetimes are always timezone-aware UTC (`UTCDateTime`); naive datetimes raise.
@@ -98,8 +98,7 @@ Design direction from the master prompt: midnight navy, electric lime, cool off-
 
 - **UI effects (latest):** dismissible alert stack with live notifications, account dropdown menu (ported 21st.dev / shadcn design on Angular CDK Menu), beams background on the home hero (ported 21st.dev "Beams Background", source fetched via the 21st.dev tools), cursor ring. Frontend tests now cover the menu (roles, staff and admin items) and the alert stack. Dependency added: `@angular/cdk`.
 
-- **Email verification removed (latest, owner request):** registering creates the account and signs it in (`201` + session cookies); `verify-email`, `resend-verification`, the `/verify-email` page, the admin "unconfirmed" tag and `verified` filter/stat are gone; a taken email now gets `409`. Migration `f72d9ca3d38f` drops `users.email_verified_at` and `email_verification_tokens` (downgrade marks every account confirmed). Trade-off: the domain allowlist no longer proves a person owns the address. Password reset email still works.
-- **Interactive Sliding Ease:** background now matches the 21st.dev original exactly, including mouse influence (180px) and click ripples; replaces the earlier lookalike.
+- **Interactive Sliding Ease (latest):** background now matches the 21st.dev original exactly, including mouse influence (180px) and click ripples; replaces the earlier lookalike.
 - **Cursor and buttons:** cursor and button animation ported from the earlier Campus Lost & Found project (`public/js/cursor.js`, `.btn` rules in `app.css`): magnetic dot and ring with leaning buttons, light sweep, 1px lift, press scale and icon nudge. Off for touch and reduced motion.
 - **Redesign pass:** impeccable workflow (PRODUCT.md interview, craft floor, animate guidance, detector). New type pairing; hero headline focus-in entrance; journey timeline port; Sliding Ease page background; Lenis smooth scroll; view transitions card to detail; card hover lift; alert and stat side stripes removed; themed selection, caret, scrollbar, accent colour and tabular numerals; compact phone header; 404 eyebrow removed. Password minimum 8. `send-test-email` CLI command; SMTP path verified against a local test server; default sender fixed.
 
@@ -146,7 +145,7 @@ Earlier phases each recorded: tests passing at the time (18, 46, 78, 109, 130, 1
 
 ## Next tasks
 
-1. Owner: set up SMTP in `backend/.env` (see README, "Sending real emails") so password reset emails arrive; until then the links are in the backend terminal.
+1. Owner: set up SMTP in `backend/.env` (see README, "Sending real emails") so verification emails arrive; until then the links are in the backend terminal.
 2. Owner or admin: replace the generic campus places with the real SRM Ramapuram buildings on the admin page.
 3. Add an in-browser camera QR scanner to the staff desk (a maintained library that works with Angular, loaded only on that page).
 4. Frontend tests for the report form, claim form and staff complete flow; consider Playwright end-to-end tests for the full claim-to-return journey.

@@ -20,6 +20,7 @@ from app.core.security import hash_password
 from app.db.enums import ReportType, UserRole
 from app.db.models import Item, User
 from app.db.session import SessionLocal
+from app.db.types import utcnow
 from app.schemas.auth import NewPassword
 from app.services import audit, maintenance, matching
 from app.services.auth import email_domain_allowed, normalise_email
@@ -41,6 +42,7 @@ def create_admin(db: Session, email: str, name: str, password: str) -> User:
         email=email,
         password_hash=hash_password(_password_adapter.validate_python(password)),
         role=UserRole.ADMIN,
+        email_verified_at=utcnow(),
     )
     db.add(user)
     db.flush()

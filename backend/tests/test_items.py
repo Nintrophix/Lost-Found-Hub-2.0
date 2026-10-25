@@ -30,7 +30,8 @@ class Api:
     def user(self, role: UserRole = UserRole.USER):
         self._n += 1
         email = f"{role.value.lower()}{self._n}@example.edu"
-        self.db.add(User(name=f"Person {self._n}", email=email, password_hash=hash_password(PASSWORD), role=role))
+        self.db.add(User(name=f"Person {self._n}", email=email, password_hash=hash_password(PASSWORD), role=role,
+                         email_verified_at=utcnow()))
         self.db.commit()
         client = self._make_client()
         assert client.post("/api/auth/login", json={"email": email, "password": PASSWORD}).status_code == 200

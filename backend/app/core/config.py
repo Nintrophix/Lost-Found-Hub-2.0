@@ -28,6 +28,7 @@ class Settings(BaseSettings):
 
     session_ttl_hours: int = Field(default=168, gt=0)
     cookie_secure: bool = True
+    email_verification_ttl_hours: int = Field(default=24, gt=0)
     password_reset_ttl_minutes: int = Field(default=30, gt=0)
     rate_limit_enabled: bool = True
 
